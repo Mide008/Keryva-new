@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply bg-dark text-white antialiased;
+  }
+}
+
+@layer utilities {
+  .text-shadow-glow {
+    text-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
+  }
+  
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 12px rgba(201, 168, 76, 0.3));
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 30px rgba(201, 168, 76, 0.15);
+  }
+  
+  .shadow-3d {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 1px 3px rgba(255,255,255,0.05);
+  }
+  
+  .bg-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  .border-glow {
+    border: 1px solid rgba(201, 168, 76, 0.15);
+  }
+}
