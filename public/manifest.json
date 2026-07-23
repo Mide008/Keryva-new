@@ -1,7 +1,7 @@
 {
   "name": "Keryva — From Scripture to Service",
   "short_name": "Keryva",
-  "description": "AI-assisted Bible reading, sermon preparation, study guides, prayer journal, Sunday planning, and church content.",
+  "description": "Bible reading, sermon preparation, study guides, prayer journal, Sunday planning, and church content.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
