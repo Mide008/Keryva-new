@@ -225,7 +225,7 @@ export default function InspirePage() {
                   {verse.reason}
                 </p>
               )}
-              <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => {
                     const msg = `*${verse.reference}*\n\n_${verse.text || ''}_\n\n— Keryva 📖`

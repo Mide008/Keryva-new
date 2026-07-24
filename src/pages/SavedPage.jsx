@@ -138,7 +138,7 @@ export default function SavedPage(){
                         <p style={{fontSize:13,color:'var(--ink-600)',lineHeight:1.6,fontStyle:'italic'}}>{note.note}</p>
                       </div>}
                       {/* Primary actions */}
-                      <div style={{display:'flex',gap:8,marginTop:14,paddingTop:12,borderTop:'1px solid var(--border-subtle)'}}>
+                      <div style={{display:'flex',gap:8,marginTop:14,paddingTop:12,borderTop:'1px solid var(--border-subtle)',flexWrap:'wrap'}}>
                         <button onClick={()=>goToBible(v)} className="btn btn-outline btn-sm" style={{padding:'7px 12px'}}>{t('verseActionGoToBible')}</button>
                         <button onClick={()=>share(v)} className="btn btn-gold btn-sm" style={{flex:1,justifyContent:'center',gap:5}}>{t('whatsapp')}</button>
                         <button onClick={()=>copy(v)} className="btn btn-outline btn-sm" style={{padding:'7px 12px'}}>{t('copy')}</button>

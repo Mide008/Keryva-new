@@ -115,7 +115,7 @@ input,textarea,select{font-family:var(--font-sans);font-size:15px;color:var(--te
 .verse-note{font-size:13.5px;color:var(--ink-500);line-height:1.6;border-top:1px solid var(--border-subtle);padding-top:var(--space-3);}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);font-family:var(--font-sans);font-size:14px;font-weight:500;letter-spacing:0.01em;padding:10px 20px;border-radius:var(--radius-md);border:none;cursor:pointer;transition:all var(--dur-fast) ease;white-space:nowrap;user-select:none;-webkit-tap-highlight-color:transparent;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);font-family:var(--font-sans);font-size:14px;font-weight:500;letter-spacing:0.01em;padding:10px 20px;border-radius:var(--radius-md);border:none;cursor:pointer;transition:all var(--dur-fast) ease;white-space:nowrap;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .btn-primary{background:var(--ink-900);color:var(--text-inverse);}
 .btn-primary:hover{background:var(--ink-700);transform:translateY(-1px);box-shadow:var(--shadow-md);}
 .btn-primary:active{transform:translateY(0);box-shadow:none;}

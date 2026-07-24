@@ -165,7 +165,7 @@ export default function BiblePage(){
             <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
               {TRANSLATIONS.map(t=><button key={t.code} title={t.name} onClick={()=>setTran(t.code)} className={`tag ${tran===t.code?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 10px',fontSize:11,fontWeight:tran===t.code?600:400}}>{t.code}</button>)}
             </div>
-            <div style={{display:'flex',gap:8}}>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {['All','OT','NT'].map(tst=>{
                 const label = tst==='OT' ? t('oldTestament') : tst==='NT' ? t('newTestament') : t('allBooks')
                 return <button key={tst} onClick={()=>setTestament(tst)} className={`btn btn-sm ${testament===tst?'btn-primary':'btn-outline'}`}>{label}</button>

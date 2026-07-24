@@ -29,7 +29,7 @@ export default function SettingsPage(){
   const [open,setOpen]=useState(null)
   const [notifs,setNotifs]=useState({daily:true,sermon:false,prayer:false})
   const [deleteConfirm,setDeleteConfirm]=useState(false)
-  const [fontScale,setFontScale]=useState(()=>parseFloat(localStorage.getItem('rhema_font_scale')||'1'))
+  const [fontScale,setFontScale]=useState(()=>Math.min(1.25,Math.max(0.85,parseFloat(localStorage.getItem('rhema_font_scale')||'1'))))
   const fileRef=useRef(null)
   const upd=(f,v)=>setUser(u=>({...u,[f]:v}))
 
@@ -170,7 +170,7 @@ export default function SettingsPage(){
         </div>
         <div className="input-group">
           <label className="input-label">{t('textSize')||'Text size'}</label>
-          <input type="range" min="0.85" max="1.4" step="0.05" value={fontScale} onChange={e=>setFontScale(parseFloat(e.target.value))} style={{width:'100%'}}/>
+          <input type="range" min="0.85" max="1.25" step="0.05" value={fontScale} onChange={e=>setFontScale(parseFloat(e.target.value))} style={{width:'100%'}}/>
           <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--text-muted)'}}><span>A</span><span style={{fontSize:18}}>A</span></div>
         </div>
         <p style={{fontSize:16*fontScale,color:'var(--text-primary)'}}>Preview: "The Lord is my shepherd, I shall not want."</p>

@@ -245,7 +245,7 @@ export default function SermonPage() {
                     </div>
                     {pt.scripture&&<div style={{background:'rgba(255,255,255,0.7)',borderRadius:8,padding:'10px 14px',marginBottom:10,borderLeft:'3px solid var(--gold-400)',fontSize:14,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--ink-700)',lineHeight:1.7}}>{pt.scripture}</div>}
                     <textarea className="textarea-field" style={{fontSize:14,minHeight:80}} value={pt.content} onChange={e=>setSermon(s=>({...s,points:s.points.map((p,j)=>j===i?{...p,content:e.target.value}:p)}))}/>
-                    <div style={{display:'flex',gap:8,marginTop:8}}>
+                    <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
                       <button onClick={()=>improve(`point ${i+1}`,pt.content)} disabled={improving!=null} className="btn btn-outline btn-sm" style={{gap:5}}>{t('improveButton')}</button>
                       <button onClick={()=>copyText(`${pt.title}\n${pt.scripture}\n${pt.content}`, t('copiedToast'))} className="btn btn-outline btn-sm">{t('copyButton')}</button>
                     </div>
@@ -365,7 +365,7 @@ function EditableSection({title,sectionKey,value,onChange,onImprove,improving,sh
   return(
     <SectionBox title={title} dark={dark}>
       <textarea className="textarea-field" style={{fontSize:14,minHeight:100,background:dark?'rgba(255,255,255,0.08)':'var(--bg-card)',color:dark?'rgba(250,247,242,0.88)':'var(--ink-700)',border:dark?'1px solid rgba(255,255,255,0.1)':'1px solid var(--border-default)'}} value={value} onChange={e=>onChange(e.target.value)}/>
-      <div style={{display:'flex',gap:8,marginTop:8}}>
+      <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
         <button onClick={onImprove} disabled={improving!=null} className="btn btn-outline btn-sm" style={{gap:5}}>
           {improving?<span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span>:t('improveButton')}
         </button>
