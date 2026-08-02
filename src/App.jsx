@@ -9,6 +9,7 @@ import ToastStack from '@/components/ui/Toast'
 import OfflineBanner from '@/components/ui/OfflineBanner'
 import InstallBanner from '@/components/ui/InstallBanner'
 import CookieConsent from '@/components/ui/CookieConsent'
+import Onboarding from '@/components/ui/Onboarding'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const HomePage        = lazy(() => import('@/pages/HomePage'))
@@ -26,6 +27,12 @@ const SpiritualWarfarePage = lazy(() => import('@/pages/SpiritualWarfarePage'))
 const DevotionalPage       = lazy(() => import('@/pages/DevotionalPage'))
 const ConfessionsPage      = lazy(() => import('@/pages/ConfessionsPage'))
 const AgentPage            = lazy(() => import('@/pages/AgentPage'))
+const FastingPage           = lazy(() => import('@/pages/FastingPage'))
+const ProjectsPage          = lazy(() => import('@/pages/ProjectsPage'))
+const CalendarPage           = lazy(() => import('@/pages/CalendarPage'))
+const YearInReviewPage        = lazy(() => import('@/pages/YearInReviewPage'))
+const VaultPage              = lazy(() => import('@/pages/VaultPage'))
+const ServiceCentrePage      = lazy(() => import('@/pages/ServiceCentrePage'))
 
 function Fallback() {
   return (
@@ -52,6 +59,12 @@ function PageRouter({ page }) {
     case 'devotional': return <DevotionalPage/>
     case 'confessions': return <ConfessionsPage/>
     case 'agent':    return <AgentPage/>
+    case 'fasting':  return <FastingPage/>
+    case 'projects': return <ProjectsPage/>
+    case 'calendar': return <CalendarPage/>
+    case 'year-review': return <YearInReviewPage/>
+    case 'vault':    return <VaultPage/>
+    case 'service':  return <ServiceCentrePage/>
     default:         return <HomePage/>
   }
 }
@@ -84,6 +97,7 @@ function Shell() {
       <ToastStack/>
       <InstallBanner/>
       <CookieConsent/>
+      <Onboarding/>
       <ConfirmDialog request={confirmRequest} onResolve={resolveConfirm}/>
     </div>
   )

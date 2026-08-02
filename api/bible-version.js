@@ -40,6 +40,17 @@ const VERSION_ABBR_CANDIDATES = {
   TLB: ['TLB'],
 }
 
+// Non-English translation codes -> ISO 639-3 language code. We match by
+// language rather than by guessed edition abbreviation, because we haven't
+// verified exact abbreviations for these catalogs (e.g. "Open Yoruba
+// Contemporary Bible") against a live key — ISO codes are a stable public
+// standard, so this resolves correctly regardless of what the specific
+// edition happens to be called this month.
+const LANGUAGE_ISO = {
+  YOR: 'yor', // Yoruba
+  IBO: 'ibo', // Igbo
+}
+
 // Full 66-book name -> standard USFM 3-letter book code (stable, public spec —
 // not account-specific, safe to hardcode).
 const USFM = {
@@ -59,20 +70,21 @@ const USFM = {
 }
 
 // In-memory cache for the life of this serverless instance — avoids
-// refetching the full bible catalog on every request.
-let bibleCatalogCache = null
-let bibleCatalogFetchedAt = 0
+// refetching the full bible catalog on every request. Keyed by language
+// since we now fetch more than just English.
+const catalogCache = new Map() // language -> { data, fetchedAt }
 const CATALOG_TTL_MS = 60 * 60 * 1000 // 1 hour
 
-async function getCatalog(apiKey) {
+async function getCatalog(apiKey, language) {
   const now = Date.now()
-  if (bibleCatalogCache && now - bibleCatalogFetchedAt < CATALOG_TTL_MS) return bibleCatalogCache
-  const res = await fetch(`${API_BASE}/bibles?language=eng`, { headers: { 'api-key': apiKey } })
+  const cached = catalogCache.get(language)
+  if (cached && now - cached.fetchedAt < CATALOG_TTL_MS) return cached.data
+  const res = await fetch(`${API_BASE}/bibles?language=${language}`, { headers: { 'api-key': apiKey } })
   if (!res.ok) throw new Error(`bibles_list_failed_${res.status}`)
   const data = await res.json()
-  bibleCatalogCache = data?.data || []
-  bibleCatalogFetchedAt = now
-  return bibleCatalogCache
+  const list = data?.data || []
+  catalogCache.set(language, { data: list, fetchedAt: now })
+  return list
 }
 
 function resolveBibleId(catalog, versionCode) {
@@ -81,6 +93,14 @@ function resolveBibleId(catalog, versionCode) {
     || catalog.find(b => candidates.some(c => (b.abbreviationLocal || '').toUpperCase() === c))
     || catalog.find(b => candidates.some(c => (b.name || '').toUpperCase().includes(c)))
   return match?.id || null
+}
+
+// For Yoruba/Igbo we match by language rather than a guessed abbreviation —
+// just take the first available edition api.bible's catalog returns for
+// that language (the free Starter tier typically exposes one open edition
+// per language; if an account has more than one, the first is used).
+function resolveBibleIdByLanguage(catalog) {
+  return catalog[0]?.id || null
 }
 
 export default async function handler(req, res) {
@@ -94,8 +114,10 @@ export default async function handler(req, res) {
   if (!usfm) { res.status(400).json({ error: `Unrecognised book: ${book}` }); return }
 
   try {
-    const catalog = await getCatalog(apiKey)
-    const bibleId = resolveBibleId(catalog, String(version).toUpperCase())
+    const versionUpper = String(version).toUpperCase()
+    const isoLang = LANGUAGE_ISO[versionUpper]
+    const catalog = await getCatalog(apiKey, isoLang || 'eng')
+    const bibleId = isoLang ? resolveBibleIdByLanguage(catalog) : resolveBibleId(catalog, versionUpper)
     if (!bibleId) { res.status(404).json({ error: `No accessible edition found for ${version}` }); return }
 
     const chapterId = `${usfm}.${chapter}`

@@ -6,6 +6,7 @@ import { useAI } from '@/lib/useAI'
 import { useTranslation } from '@/hooks/useTranslation'
 import { SERMON_PROMPTS, STUDY_GUIDE_PROMPTS, SUNDAY_PACK_PROMPTS, languageLabelFor } from '@/lib/aiServices'
 import { verifyReference } from '@/services/bibleApi'
+import { idbGet, idbSet } from '@/lib/idb'
 import { tryConsume } from '@/lib/usageLimits'
 import VerifiedBadge from '@/components/ui/VerifiedBadge'
 import Icon3D from '@/components/ui/Icon3D'
@@ -18,12 +19,18 @@ function parseJSON(raw) {
 // One fast Groq call decides what the user wants and with what parameters.
 // Kept intentionally small and strict about output shape so a cheap/fast
 // model can do it reliably — this is tool SELECTION, not tool EXECUTION.
-function buildRouterPrompt(userText, history) {
+function buildRouterPrompt(userText, history, currentDraft, vaultTitles) {
   const recent = history.slice(-6).map(m => `${m.role}: ${m.text}`).join('\n')
+  const draftContext = currentDraft
+    ? `\n\nCurrent draft in progress: a ${currentDraft.type} on "${currentDraft.topic}". If the newest message is an edit instruction about THIS draft (e.g. "make point 2 shorter", "make it more youth-friendly", "change the tone"), use action="edit_current" with args={ instruction: "<their exact request>" } rather than asking them to re-explain the topic.`
+    : ''
+  const vaultContext = vaultTitles?.length
+    ? `\n\nUser's Knowledge Vault contains: ${vaultTitles.join(', ')}. If they ask to use/base something on one of these (e.g. "using our leadership manual"), add args.vaultRef set to the exact matching title.`
+    : ''
   return `You are a routing classifier for a ministry assistant. Given the conversation so far and the newest user message, decide which single action fits best and extract its arguments. Return ONLY JSON, no extra text, in this exact shape:
 
 {
-  "action": "create_sermon" | "create_study_guide" | "create_sunday_pack" | "search_scripture" | "verify_scripture" | "translate" | "clarify" | "chat",
+  "action": "create_sermon" | "create_study_guide" | "create_sunday_pack" | "edit_current" | "search_scripture" | "verify_scripture" | "translate" | "multi_step_plan" | "clarify" | "chat",
   "args": { ...whatever fields the action needs, using the user's own words },
   "question": "a single short follow-up question — ONLY set this and use action=clarify if a required field is genuinely missing (e.g. sermon requested with no topic at all)",
   "reply": "a short natural reply — ONLY for action=chat (small talk, general questions not needing a tool)"
@@ -33,11 +40,15 @@ Field guide per action:
 - create_sermon: { topic, scripture?, audience?, tone?, length? }
 - create_study_guide: { topic, groupType?, length? }
 - create_sunday_pack: { topic, date?, scripture?, church? }
+- edit_current: { instruction }
 - search_scripture: { topic }
 - verify_scripture: { reference }
 - translate: { text, targetLanguage }
+- multi_step_plan: { steps: [{ action: "create_sermon"|"create_study_guide"|"create_sunday_pack"|"search_scripture", args: {...} }, ...], summary: "one short sentence describing the overall plan" }
 
-Prefer acting over asking — only use "clarify" when there is truly not enough to proceed (e.g. "build me a sermon" with zero topic given anywhere in the conversation). Do not ask about optional fields.
+Use multi_step_plan ONLY when the request clearly asks for more than one deliverable in one go (e.g. "prepare everything for Sunday's youth service on purpose" → sermon + study guide + Sunday Pack). Cap steps at 5 — if the request implies more, include only the first 5 and note the rest isn't included in the summary. For a single deliverable, use that action directly, not multi_step_plan.
+
+Prefer acting over asking — only use "clarify" when there is truly not enough to proceed (e.g. "build me a sermon" with zero topic given anywhere in the conversation). Do not ask about optional fields.${draftContext}${vaultContext}
 
 Conversation so far:
 ${recent}
@@ -58,16 +69,109 @@ const ACTION_LABELS = {
 
 export default function AgentPage() {
   const { t } = useTranslation()
-  const { user, showToast, confirmAction, saveSermon, saveStudyGuide, saveSundayPack, setActivePage, setPendingVerse, setPendingChapter } = useApp()
+  const { user, showToast, confirmAction, saveSermon, saveStudyGuide, saveSundayPack, setActivePage, setPendingVerse, setPendingChapter, vaultItems } = useApp()
   const { ask, error } = useAI()
   const [messages, setMessages] = useState([
     { role: 'assistant', text: t('agentIntro') },
   ])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [listening, setListening] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [resumeOffer, setResumeOffer] = useState(null) // saved memory, offered but not yet restored
   const scrollRef = useRef(null)
+  const recognitionRef = useRef(null)
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
+  const lastArtifactRef = useRef(null) // { type, args, data } of the most recently generated draft
+
+  const SpeechRecognitionAPI = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
+  const hasNativeSpeech = !!SpeechRecognitionAPI
+  const hasMicFallback = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof window !== 'undefined' && !!window.MediaRecorder
+  const voiceSupported = hasNativeSpeech || hasMicFallback
+
+  const toggleListening = async () => {
+    if (listening) {
+      if (hasNativeSpeech) recognitionRef.current?.stop()
+      else mediaRecorderRef.current?.stop()
+      return
+    }
+    if (hasNativeSpeech) {
+      const recognition = new SpeechRecognitionAPI()
+      recognition.lang = 'en-US'
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+      recognition.onresult = (e) => {
+        const transcript = e.results[0]?.[0]?.transcript
+        if (transcript) setInput(prev => (prev ? prev + ' ' : '') + transcript)
+      }
+      recognition.onerror = () => setListening(false)
+      recognition.onend = () => setListening(false)
+      recognitionRef.current = recognition
+      recognition.start()
+      setListening(true)
+      return
+    }
+    // Fallback: record audio and transcribe server-side via Groq Whisper —
+    // covers Firefox (native API disabled by default) and Safari-as-PWA
+    // (blocks the native API entirely once installed to home screen).
+    if (!hasMicFallback) return
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      audioChunksRef.current = []
+      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data)
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        setListening(false)
+        setTranscribing(true)
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          const res = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: blob })
+          const data = await res.json()
+          if (data.text) setInput(prev => (prev ? prev + ' ' : '') + data.text)
+          else showToast('Could not transcribe that — please try again or type instead', '⚠️')
+        } catch {
+          showToast('Voice transcription unavailable right now — please type instead', '⚠️')
+        }
+        setTranscribing(false)
+      }
+      mediaRecorderRef.current = recorder
+      recorder.start()
+      setListening(true)
+    } catch {
+      showToast('Microphone access was denied — please type instead', '⚠️')
+    }
+  }
 
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages])
+
+  useEffect(() => {
+    (async () => {
+      const saved = await idbGet('agent_working_memory')
+      if (saved?.value?.lastArtifact && saved.value.messages?.length > 1) {
+        const ageMs = Date.now() - new Date(saved.value.lastUpdatedAt || 0).getTime()
+        if (ageMs < 30 * 24 * 60 * 60 * 1000) setResumeOffer(saved.value) // only offer if updated within 30 days
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    if (messages.length <= 1) return // don't persist the empty default intro
+    idbSet('agent_working_memory', {
+      messages: messages.slice(-20), // cap what's persisted — this is working memory, not a full transcript archive
+      lastArtifact: lastArtifactRef.current,
+      lastUpdatedAt: new Date().toISOString(),
+    }).catch(() => {})
+  }, [messages])
+
+  const resumeDraft = () => {
+    if (!resumeOffer) return
+    setMessages(resumeOffer.messages)
+    lastArtifactRef.current = resumeOffer.lastArtifact
+    setResumeOffer(null)
+  }
+  const dismissResume = () => setResumeOffer(null)
 
   const pushMessage = (msg) => setMessages(prev => [...prev, msg])
 
@@ -80,7 +184,7 @@ export default function AgentPage() {
     setBusy(true)
 
     try {
-      const routerRaw = await ask(buildRouterPrompt(text, messages), 'fast')
+      const routerRaw = await ask(buildRouterPrompt(text, messages, lastArtifactRef.current, vaultItems.map(v => v.title)), 'fast')
       if (!routerRaw) {
         pushMessage({ role: 'assistant', text: error || t('agentCouldNotProcess') })
         setBusy(false)
@@ -95,6 +199,22 @@ export default function AgentPage() {
       }
       if (routed.action === 'chat') {
         pushMessage({ role: 'assistant', text: routed.reply || t('agentChatDefault') })
+        setBusy(false)
+        return
+      }
+      if (routed.action === 'multi_step_plan') {
+        const steps = (routed.args?.steps || []).slice(0, 5)
+        if (!steps.length) {
+          pushMessage({ role: 'assistant', text: "I couldn't break that into clear steps — could you describe each part you need separately?" })
+          setBusy(false)
+          return
+        }
+        pushMessage({ role: 'assistant', text: `📋 Plan: ${routed.args.summary || `${steps.length} steps`}` })
+        for (let i = 0; i < steps.length; i++) {
+          pushMessage({ role: 'assistant', text: `Step ${i + 1} of ${steps.length}…` })
+          await executeAction(steps[i].action, steps[i].args || {})
+        }
+        pushMessage({ role: 'assistant', text: `✅ That's the full plan — review each draft above and save whichever you'd like to keep. Nothing has been saved yet.` })
         setBusy(false)
         return
       }
@@ -147,7 +267,11 @@ export default function AgentPage() {
       const gate = tryConsume('sermon')
       if (!gate.allowed) { pushMessage({ role: 'assistant', text: t('agentSermonLimitReached') }); return }
       pushMessage({ role: 'assistant', text: `${t('agentDraftingSermon')} "${args.topic}"…`, pending: true })
-      const raw = await ask(SERMON_PROMPTS.generate({ topic: args.topic, scripture: args.scripture || '', audience: args.audience || 'General congregation', tone: args.tone || 'Inspirational', length: args.length || '30-minute sermon', translation: user.translation || 'KJV', languageLabel: langLabel }), 'longform')
+      const vaultMatch = args.vaultRef ? vaultItems.find(v => v.title === args.vaultRef) : null
+      const topicWithVault = vaultMatch
+        ? `${args.topic}\n\n[Reference material the user provided — from their Knowledge Vault, titled "${vaultMatch.title}". This is the user's own material, NOT Scripture and not independently verified — draw on it for tone/content but do not present it as Bible text:]\n${vaultMatch.content}`
+        : args.topic
+      const raw = await ask(SERMON_PROMPTS.generate({ topic: topicWithVault, scripture: args.scripture || '', audience: args.audience || 'General congregation', tone: args.tone || 'Inspirational', length: args.length || '30-minute sermon', translation: user.translation || 'KJV', languageLabel: langLabel }), 'longform')
       setMessages(prev => prev.filter(m => !m.pending))
       const sermon = parseJSON(raw)
       if (!sermon) { pushMessage({ role: 'assistant', text: t('agentCouldNotBuildSermon') }); return }
@@ -159,6 +283,7 @@ export default function AgentPage() {
         }))
       }
       pushMessage({ role: 'assistant', kind: 'sermon-draft', data: sermon })
+      lastArtifactRef.current = { type: 'sermon', args: { ...args, translation: user.translation || 'KJV', languageLabel: langLabel }, data: sermon }
       return
     }
 
@@ -172,6 +297,7 @@ export default function AgentPage() {
       const guide = parseJSON(raw)
       if (!guide) { pushMessage({ role: 'assistant', text: t('agentCouldNotBuildStudy') }); return }
       pushMessage({ role: 'assistant', kind: 'study-guide', data: guide })
+      lastArtifactRef.current = { type: 'study guide', args: { ...args, translation: user.translation || 'KJV', languageLabel: langLabel }, data: guide }
       return
     }
 
@@ -186,6 +312,27 @@ export default function AgentPage() {
       const pack = parseJSON(raw)
       if (!pack) { pushMessage({ role: 'assistant', text: t('agentCouldNotBuildSunday') }); return }
       pushMessage({ role: 'assistant', kind: 'sunday-pack', data: { ...pack, topic: args.topic, date, scripture: args.scripture, church: args.church || 'Our Church' } })
+      lastArtifactRef.current = { type: 'Sunday Pack', args: { ...args, date }, data: pack }
+      return
+    }
+
+    if (action === 'edit_current') {
+      const current = lastArtifactRef.current
+      if (!current) { pushMessage({ role: 'assistant', text: "I don't have a draft to edit yet — build a sermon, study guide, or Sunday Pack first, then ask me to adjust it." }); return }
+      pushMessage({ role: 'assistant', text: `Updating your ${current.type}…`, pending: true })
+      const editPrompt = `Here is a ${current.type} as JSON:
+${JSON.stringify(current.data)}
+
+Apply this edit request: "${args.instruction}"
+
+Return ONLY the complete updated JSON in the exact same shape as the input — not just the changed part, the whole object with the edit applied. Respond in ${langLabel}.`
+      const raw = await ask(editPrompt, 'longform')
+      setMessages(prev => prev.filter(m => !m.pending))
+      const updated = parseJSON(raw)
+      if (!updated) { pushMessage({ role: 'assistant', text: "I couldn't apply that edit cleanly — want me to try again, or describe it differently?" }); return }
+      const kindMap = { sermon: 'sermon-draft', 'study guide': 'study-guide', 'Sunday Pack': 'sunday-pack' }
+      pushMessage({ role: 'assistant', kind: kindMap[current.type], data: updated })
+      lastArtifactRef.current = { ...current, data: updated }
       return
     }
   }
@@ -196,6 +343,7 @@ export default function AgentPage() {
     saveSermon(sermon)
     showToast('Sermon saved', '🎙')
     pushMessage({ role: 'assistant', text: t('agentSermonSaved') })
+    pushMessage({ role: 'assistant', kind: 'chain-suggest', data: { label: '📚 Turn this into a Study Guide', action: 'create_study_guide', args: { topic: sermon.title || sermon.theme || '', scripture: sermon.mainText || '' } } })
   }
   const handleSaveStudy = async (guide) => {
     const ok = await confirmAction(t('agentSaveStudyConfirm'), { confirmLabel: t('save') })
@@ -213,7 +361,7 @@ export default function AgentPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - var(--topbar-h) - 40px)', maxHeight: 780 }}>
+    <div className="agent-shell">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <Icon3D name="sparkle" tone="gold" active size={20} badgeSize={44} />
         <div>
@@ -222,9 +370,22 @@ export default function AgentPage() {
         </div>
       </div>
 
+      {resumeOffer && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: 'var(--gold-50)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 14px', marginBottom: 14 }}>
+          <span style={{ fontSize: 13, color: 'var(--gold-800)' }}>
+            You still have a {resumeOffer.lastArtifact?.type} in progress on "{resumeOffer.lastArtifact?.args?.topic || resumeOffer.lastArtifact?.args?.instruction || 'your last session'}".
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={resumeDraft} className="btn btn-gold btn-sm">Continue it</button>
+            <button onClick={dismissResume} className="btn btn-ghost btn-sm">Start fresh</button>
+          </div>
+        </div>
+      )}
+
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingRight: 4 }}>
         {messages.map((m, i) => (
           <MessageBubble key={i} m={m} onSaveSermon={handleSaveSermon} onSaveStudy={handleSaveStudy} onSaveSunday={handleSaveSunday}
+            onChainAction={(action, args) => executeAction(action, args)}
             onAddToSermon={(ref, text) => { setPendingVerse({ ref, translation: user.translation || 'KJV', text }); setActivePage('sermon') }}
             onAddToPrayer={(ref, text) => { setPendingVerse({ ref, translation: user.translation || 'KJV', text }); setActivePage('prayer') }}
             onGoToBible={(ref) => {
@@ -252,13 +413,20 @@ export default function AgentPage() {
           disabled={busy}
           style={{ flex: 1 }}
         />
+        {voiceSupported && (
+          <button type="button" onClick={toggleListening} className="btn btn-outline" disabled={busy || transcribing}
+            style={{ color: listening ? 'var(--terra-500)' : undefined, borderColor: listening ? 'var(--terra-400)' : undefined }}
+            title={listening ? 'Stop listening' : transcribing ? 'Transcribing…' : 'Speak instead of typing'}>
+            {transcribing ? <span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span> : listening ? '⏺' : '🎙'}
+          </button>
+        )}
         <button type="submit" className="btn btn-primary" disabled={busy || !input.trim()}>{t('agentSend')}</button>
       </form>
     </div>
   )
 }
 
-function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSermon, onAddToPrayer, onGoToBible }) {
+function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSermon, onAddToPrayer, onGoToBible, onChainAction }) {
   const isUser = m.role === 'user'
   const bubbleStyle = {
     maxWidth: '88%', alignSelf: isUser ? 'flex-end' : 'flex-start',
@@ -266,6 +434,14 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
     color: isUser ? 'var(--text-inverse)' : 'var(--text-primary)',
     border: isUser ? 'none' : '1px solid var(--border-subtle)',
     borderRadius: 16, padding: '12px 16px', fontSize: 14, lineHeight: 1.6,
+  }
+
+  if (m.kind === 'chain-suggest') {
+    return (
+      <button onClick={() => onChainAction(m.data.action, m.data.args)} className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }}>
+        {m.data.label}
+      </button>
+    )
   }
 
   if (m.kind === 'verse-check') {
@@ -346,5 +522,20 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
     )
   }
 
-  return <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={bubbleStyle}>{m.text}</motion.div>
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={bubbleStyle}>
+      {m.text}
+      {!isUser && typeof window !== 'undefined' && window.speechSynthesis && (
+        <button onClick={() => speak(m.text)} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', padding: 0 }} title="Listen">🔊 Listen</button>
+      )}
+    </motion.div>
+  )
+}
+
+function speak(text) {
+  if (!text || typeof window === 'undefined' || !window.speechSynthesis) return
+  window.speechSynthesis.cancel() // stop anything already playing
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.rate = 0.95
+  window.speechSynthesis.speak(utterance)
 }

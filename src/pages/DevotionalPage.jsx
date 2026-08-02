@@ -148,6 +148,15 @@ export default function DevotionalPage(){
               <div className="card-elevated">
                 <h2 style={{ fontFamily:'var(--font-serif)', fontSize:20, fontWeight:500, color:'var(--ink-900)', marginBottom:12 }}>{devotional.title}</h2>
                 <p style={{ fontSize:14.5, color:'var(--ink-700)', lineHeight:1.8 }}>{devotional.reflection}</p>
+                {typeof window !== 'undefined' && window.speechSynthesis && (
+                  <button onClick={() => {
+                    window.speechSynthesis.cancel()
+                    const full = [devotional.verseText, devotional.title, devotional.reflection, devotional.application, devotional.prayer].filter(Boolean).join('. ')
+                    const utterance = new SpeechSynthesisUtterance(full)
+                    utterance.rate = 0.95
+                    window.speechSynthesis.speak(utterance)
+                  }} className="btn btn-outline btn-sm" style={{ marginTop: 12 }}>🔊 Listen to today's devotional</button>
+                )}
               </div>
               <div className="card">
                 <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:8 }}>{t('todayApplication')}</div>

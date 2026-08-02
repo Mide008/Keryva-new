@@ -29,6 +29,10 @@ export function AppProvider({children}){
   const[warfareEntries,setWarfareEntries]=useState(s?.warfareEntries||[])
   const[devotionals,setDevotionals]=useState(s?.devotionals||[])
   const[confessions,setConfessions]=useState(s?.confessions||[])
+  const[vaultItems,setVaultItems]=useState(s?.vaultItems||[])
+  const[fastingEntries,setFastingEntries]=useState(s?.fastingEntries||[])
+  const[projects,setProjects]=useState(s?.projects||[])
+  const[calendarEvents,setCalendarEvents]=useState(s?.calendarEvents||[])
   const[toasts,setToasts]=useState([])
   const[confirmRequest,setConfirmRequest]=useState(null)
   const confirmResolverRef=useRef(null)
@@ -88,7 +92,7 @@ export function AppProvider({children}){
     }
   },[])
 
-  useEffect(()=>{ save({user,savedVerses,prayers,sermons,studyGuides,sundayPacks,socialPacks,verseNotes,warfareEntries,devotionals,confessions}) },[user,savedVerses,prayers,sermons,studyGuides,sundayPacks,socialPacks,verseNotes,warfareEntries,devotionals,confessions])
+  useEffect(()=>{ save({user,savedVerses,prayers,sermons,studyGuides,sundayPacks,socialPacks,verseNotes,warfareEntries,devotionals,confessions,fastingEntries,projects,calendarEvents,vaultItems}) },[user,savedVerses,prayers,sermons,studyGuides,sundayPacks,socialPacks,verseNotes,warfareEntries,devotionals,confessions,fastingEntries,projects,calendarEvents,vaultItems])
   useEffect(()=>{ idbSet('prayers',prayers) },[prayers])
 
   const setUser=useCallback(u=>setUs(p=>({...p,...(typeof u==='function'?u(p):u)})),[])
@@ -99,8 +103,28 @@ export function AppProvider({children}){
   const addPrayer=useCallback(p=>{const e={...p,id:Date.now(),date:new Date().toISOString().split('T')[0],status:'praying',suggestedScriptures:[],followUpNotes:''};setPrayers(a=>[e,...a]);showToast('Prayer logged','🙏')},[showToast])
   const updatePrayer=useCallback((id,updates)=>setPrayers(a=>a.map(x=>x.id===id?{...x,...updates}:x)),[])
   const deletePrayer=useCallback(id=>{setPrayers(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
-  const saveSermon=useCallback(s=>{const e={...s,id:s.id||Date.now(),date:s.date||new Date().toISOString().split('T')[0]};setSermons(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Sermon saved','📖');return e},[showToast])
+  const saveSermon=useCallback(s=>{
+    const existing=s.id?sermons.find(x=>x.id===s.id):null
+    const e={...s,id:s.id||Date.now(),date:s.date||new Date().toISOString().split('T')[0]}
+    if(existing){
+      // snapshot the previous state before overwriting, so it can be restored
+      const snapshot={...existing,versionedAt:new Date().toISOString()}
+      e.versions=[snapshot,...(existing.versions||[])].slice(0,20) // cap history to last 20
+    }
+    setSermons(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Sermon saved','📖');return e
+  },[showToast,sermons])
   const deleteSermon=useCallback(id=>{setSermons(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
+  const restoreSermonVersion=useCallback((sermonId,versionedAt)=>{
+    setSermons(a=>a.map(s=>{
+      if(s.id!==sermonId)return s
+      const target=(s.versions||[]).find(v=>v.versionedAt===versionedAt)
+      if(!target)return s
+      const currentSnapshot={...s,versions:undefined,versionedAt:new Date().toISOString()}
+      const remaining=(s.versions||[]).filter(v=>v.versionedAt!==versionedAt)
+      return {...target,id:s.id,versions:[currentSnapshot,...remaining].slice(0,20)}
+    }))
+    showToast('Version restored','↺')
+  },[showToast])
   const saveStudyGuide=useCallback(g=>{const e={...g,id:g.id||Date.now(),date:g.date||new Date().toISOString().split('T')[0]};setStudyGuides(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Study guide saved','📚');return e},[showToast])
   const saveSundayPack=useCallback(p=>{const e={...p,id:p.id||Date.now(),date:p.date||new Date().toISOString().split('T')[0]};setSundayPacks(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Sunday Pack saved','📋');return e},[showToast])
   const saveSocialPack=useCallback(p=>{const e={...p,id:p.id||Date.now(),date:p.date||new Date().toISOString().split('T')[0]};setSocialPacks(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Social Pack saved','📱');return e},[showToast])
@@ -110,6 +134,38 @@ export function AppProvider({children}){
   const saveDevotional=useCallback(d=>{const entry={...d,id:d.id||Date.now(),date:d.date||new Date().toISOString().split('T')[0]};setDevotionals(a=>[entry,...a.filter(x=>x.date!==entry.date)]);return entry},[])
   const saveConfessions=useCallback(c=>{const entry={...c,id:c.id||Date.now(),date:c.date||new Date().toISOString().split('T')[0]};setConfessions(a=>[entry,...a.filter(x=>x.id!==entry.id)]);showToast('Declarations saved','🕊')},[showToast])
   const deleteConfessions=useCallback(id=>{setConfessions(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
+  const saveFastingEntry=useCallback(e=>{const entry={...e,id:e.id||Date.now(),date:e.date||new Date().toISOString().split('T')[0]};setFastingEntries(a=>[entry,...a.filter(x=>x.id!==entry.id)]);showToast('Fasting plan saved','🍽');return entry},[showToast])
+  const deleteFastingEntry=useCallback(id=>{setFastingEntries(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
+  const logFastingDay=useCallback(entryId=>{
+    const today=new Date().toISOString().split('T')[0]
+    setFastingEntries(a=>a.map(e=>e.id===entryId?{...e,daysCompleted:[...new Set([...(e.daysCompleted||[]),today])]}:e))
+    showToast('Day logged','✅')
+  },[showToast])
+  const addFastingJournalEntry=useCallback((entryId,journal)=>{
+    const today=new Date().toISOString().split('T')[0]
+    setFastingEntries(a=>a.map(e=>e.id===entryId?{...e,journal:[{...journal,date:today,loggedAt:new Date().toISOString()},...(e.journal||[])]}:e))
+    showToast('Reflection saved','📓')
+  },[showToast])
+  const completeFastingJourney=useCallback((entryId,review)=>{
+    setFastingEntries(a=>a.map(e=>e.id===entryId?{...e,completed:true,completedAt:new Date().toISOString(),endReview:review}:e))
+    showToast('Fasting journey completed','🙌')
+  },[showToast])
+
+  const saveProject=useCallback(p=>{const e={...p,id:p.id||Date.now(),date:p.date||new Date().toISOString().split('T')[0],items:p.items||[]};setProjects(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Project saved','🗂');return e},[showToast])
+  const deleteProject=useCallback(id=>{setProjects(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
+  const addToProject=useCallback((projectId,item)=>{
+    setProjects(a=>a.map(p=>p.id===projectId?{...p,items:[...p.items.filter(x=>!(x.type===item.type&&x.id===item.id)),item]}:p))
+    showToast('Added to project','🗂')
+  },[showToast])
+  const removeFromProject=useCallback((projectId,type,itemId)=>{
+    setProjects(a=>a.map(p=>p.id===projectId?{...p,items:p.items.filter(x=>!(x.type===type&&x.id===itemId))}:p))
+  },[])
+
+  const saveCalendarEvent=useCallback(ev=>{const e={...ev,id:ev.id||Date.now()};setCalendarEvents(a=>[...a.filter(x=>x.id!==e.id),e].sort((x,y)=>new Date(x.date)-new Date(y.date)));showToast('Event saved','📅');return e},[showToast])
+  const deleteCalendarEvent=useCallback(id=>{setCalendarEvents(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
+
+  const saveVaultItem=useCallback(v=>{const e={...v,id:v.id||Date.now(),date:v.date||new Date().toISOString().split('T')[0]};setVaultItems(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Saved to Knowledge Vault','📚');return e},[showToast])
+  const deleteVaultItem=useCallback(id=>{setVaultItems(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
 
   return(<Ctx.Provider value={{
     user,setUser,
@@ -123,6 +179,11 @@ export function AppProvider({children}){
     warfareEntries,saveWarfareEntry,deleteWarfareEntry,
     devotionals,saveDevotional,
     confessions,saveConfessions,deleteConfessions,
+    fastingEntries,saveFastingEntry,deleteFastingEntry,logFastingDay,addFastingJournalEntry,completeFastingJourney,
+    projects,saveProject,deleteProject,addToProject,removeFromProject,
+    calendarEvents,saveCalendarEvent,deleteCalendarEvent,
+    vaultItems,saveVaultItem,deleteVaultItem,
+    restoreSermonVersion,
     toasts,showToast,
     confirmAction,confirmRequest,resolveConfirm,
     activePage,setActivePage,

@@ -81,7 +81,7 @@ export default function SettingsPage(){
       <div style={{display:'flex',flexDirection:'column',gap:14}}>
         <div style={{display:'flex',alignItems:'center',gap:14}}>
           <div onClick={()=>fileRef.current?.click()} style={{width:64,height:64,borderRadius:'50%',background:user.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-400),var(--gold-700))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:700,color:'var(--ink-900)',flexShrink:0,cursor:'pointer',border:'2px solid var(--border-gold)'}}>
-            {!user.photo && (user.name||'R').slice(0,2).toUpperCase()}
+            {!user.photo && (user.name||'U').slice(0,2).toUpperCase()}
           </div>
           <div>
             <button className="btn btn-outline btn-sm" onClick={()=>fileRef.current?.click()}>📷 {t('changePhoto')||'Change photo'}</button>
@@ -265,7 +265,7 @@ export default function SettingsPage(){
       <RevealCard>
         <div className="card-gold" style={{display:'flex',alignItems:'center',gap:16,marginBottom:4}}>
           <div style={{width:56,height:56,borderRadius:'50%',background:user.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-400),var(--gold-700))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'var(--ink-900)',flexShrink:0}}>
-            {!user.photo && (user.name||'R').slice(0,2).toUpperCase()}
+            {!user.photo && (user.name||'U').slice(0,2).toUpperCase()}
           </div>
           <div>
             <div style={{fontFamily:'var(--font-serif)',fontSize:20,fontWeight:500}}>{user.name||'Welcome'}</div>

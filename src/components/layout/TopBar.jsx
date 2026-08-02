@@ -26,7 +26,7 @@ export default function TopBar(){
           </svg>
           <span style={{position:'absolute',top:4,right:4,width:7,height:7,borderRadius:'50%',background:'var(--gold-500)',border:'2px solid #FFF'}}/>
         </button>
-        <div style={{width:34,height:34,borderRadius:'50%',background:user?.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-400),var(--gold-700))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'var(--ink-900)',cursor:'pointer',boxShadow:'var(--shadow-sm)',flexShrink:0}}>{!user?.photo&&(user?.name||'R').slice(0,2).toUpperCase()}</div>
+        <div style={{width:34,height:34,borderRadius:'50%',background:user?.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-400),var(--gold-700))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'var(--ink-900)',cursor:'pointer',boxShadow:'var(--shadow-sm)',flexShrink:0}}>{!user?.photo&&(user?.name||'U').slice(0,2).toUpperCase()}</div>
       </div>
     </header>
   )

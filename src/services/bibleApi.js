@@ -121,6 +121,24 @@ async function fetchFromESVProxy(bookName, chapter) {
 // bible-api.com's free catalog is public-domain only.
 const NEEDS_BIBLE_VERSION_PROXY = new Set(['NIV','NLT','AMP','MSG','NASB','CSB','NKJV','NCV','GNT','NRSV','TLB'])
 
+// Yoruba/Igbo/Pidgin go through the full fallback-chain orchestrator
+// (API.Bible -> Bible Brain -> Azure Translator) instead of the
+// single-provider proxy above, since these need the extra fallback and the
+// honest machine-translation labelling the chain provides.
+const NATIVE_LANGUAGE_CODES = { YOR: 'YOR', IBO: 'IBO', PCM: 'PCM' }
+
+async function fetchFromScriptureService(bookName, chapter, translationCode) {
+  const langKey = NATIVE_LANGUAGE_CODES[translationCode]
+  const res = await fetch(`/api/scripture?book=${encodeURIComponent(bookName)}&chapter=${chapter}&lang=${langKey}`)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `scripture service ${res.status}`)
+  }
+  const data = await res.json()
+  if (!data?.verses?.length) throw new Error('No verses in scripture service response')
+  return data
+}
+
 async function fetchFromBibleVersionProxy(bookName, chapter, translationCode) {
   const res = await fetch(`/api/bible-version?book=${encodeURIComponent(bookName)}&chapter=${chapter}&version=${encodeURIComponent(translationCode)}`)
   if (!res.ok) {
@@ -149,6 +167,28 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
       if (verses.length) { const result = { verses, source: 'esv' }; cacheSet(cacheKey, result); return result }
     } catch (err) {
       console.warn('ESV proxy unavailable, falling back:', err.message)
+    }
+  }
+
+  // Yoruba, Igbo, Nigerian Pidgin — full fallback chain (API.Bible -> Bible
+  // Brain -> Azure Translator as last resort). Never falls back to KJV
+  // silently: if nothing is available, we say so plainly rather than
+  // showing an English verse under a Yoruba/Igbo label.
+  if (NATIVE_LANGUAGE_CODES[translationCode]) {
+    try {
+      const data = await fetchFromScriptureService(bookName, chapter, translationCode)
+      const result = {
+        verses: data.verses,
+        source: data.source,
+        note: data.machineTranslated
+          ? `Automatically translated from the English World English Bible \u2014 this may differ from an officially published ${translationCode === 'YOR' ? 'Yoruba' : translationCode === 'IBO' ? 'Igbo' : 'Pidgin'} Bible.`
+          : undefined,
+      }
+      cacheSet(cacheKey, result)
+      return result
+    } catch (err) {
+      console.warn(`Scripture service unavailable for ${translationCode}:`, err.message)
+      return { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, or AZURE_TRANSLATOR_KEY in your Vercel project to enable this.` }
     }
   }
 

@@ -46,7 +46,7 @@ export default function InstallBanner() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#F2D98A,#B8862E)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#1C1710', fontFamily: 'var(--font-serif)' }}>R</div>
+          <img src="/logo-mark.png" srcSet="/logo-mark.png 1x, /logo-mark@2x.png 2x" alt="Keryva" width={38} height={38} style={{ borderRadius: 10, flexShrink: 0 }}/>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 500 }}>Install Keryva</div>
             <div style={{ fontSize: 12.5, color: 'rgba(245,240,230,0.65)', marginTop: 2, lineHeight: 1.5 }}>

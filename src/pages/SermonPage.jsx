@@ -26,13 +26,19 @@ export default function SermonPage() {
   const [tab, setTab] = useState('build')
   const [form, setForm] = useState({ topic:'', scripture:'', audience:'General congregation', denomination:'Pentecostal / Charismatic', length:'45-minute sermon', tone:'Inspirational', translation:'KJV' })
   const [sermon, setSermon] = useState(null)
+  const [currentSermonId, setCurrentSermonId] = useState(null)
+  const [review, setReview] = useState(null)
+  const [reviewing, setReviewing] = useState(false)
   const [improving, setImproving] = useState(null)
   const [preachMode, setPreachMode] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [timerOn, setTimerOn] = useState(false)
+  const [pulpitScale, setPulpitScale] = useState(1)
+  const [teleprompterOn, setTeleprompterOn] = useState(false)
+  const preachScrollRef = useRef(null)
   const { ask, loading } = useAI()
   const ai = useAIServices(ask)
-  const { user, sermons, saveSermon, deleteSermon, showToast, setActivePage, pendingVerse, setPendingVerse, confirmAction } = useApp()
+  const { user, sermons, saveSermon, deleteSermon, restoreSermonVersion, showToast, setActivePage, pendingVerse, setPendingVerse, confirmAction } = useApp()
 
   useEffect(() => {
     if (!pendingVerse) return
@@ -47,6 +53,14 @@ export default function SermonPage() {
     return () => clearInterval(id)
   }, [timerOn])
 
+  useEffect(() => {
+    if (!teleprompterOn || !preachScrollRef.current) return
+    const id = setInterval(() => {
+      if (preachScrollRef.current) preachScrollRef.current.scrollTop += 1
+    }, 60)
+    return () => clearInterval(id)
+  }, [teleprompterOn])
+
   const upd = (k,v) => setForm(f=>({...f,[k]:v}))
 
   const generate = async () => {
@@ -54,6 +68,7 @@ export default function SermonPage() {
     const gate = tryConsume('sermon')
     if (!gate.allowed) { showToast("You've reached today's free sermon limit. Come back tomorrow, or your saved sermons remain fully available.", '⏳'); return }
     setSermon(null)
+    setCurrentSermonId(null)
     const r = await ai.generateSermon({ ...form, languageLabel: languageLabelFor(user.language) })
     if (r) { setSermon(r); setTab('edit'); showToast(t('sermonGenerated'), '🎙') }
     else showToast(t('errorParsing'), '❌')
@@ -91,8 +106,18 @@ export default function SermonPage() {
   }
 
   const save = () => {
-    saveSermon({ ...form, content: sermon, status: 'completed', id: Date.now() })
+    const saved = saveSermon({ ...form, content: sermon, status: 'completed', id: currentSermonId || Date.now() })
+    setCurrentSermonId(saved.id)
     showToast(t('sermonSaved'), '📖')
+  }
+
+  const runReview = async () => {
+    if (!sermon) return
+    setReviewing(true); setReview(null)
+    const parsed = await ai.reviewSermon(sermon, form.length)
+    setReviewing(false)
+    if (parsed) setReview(parsed)
+    else showToast('Could not review this right now — please try again', '❌')
   }
 
   const fullText = () => sermon ? `${sermon.title}\n\nTheme: ${sermon.theme}\nScripture: ${sermon.mainText}\n\nINTRODUCTION\n${sermon.introduction}\n\n${sermon.points?.map((p,i)=>`POINT ${i+1}: ${p.title}\n${p.content}\n${p.scripture}`).join('\n\n')}\n\nAPPLICATION\n${sermon.application}\n\nALTAR CALL\n${sermon.altarCall}\n\nCLOSING PRAYER\n${sermon.closingPrayer}\n\nKeryva · OmniCraft Studios` : ''
@@ -276,6 +301,50 @@ export default function SermonPage() {
                   <button onClick={save} className="btn btn-gold" style={{flex:1,justifyContent:'center',gap:8}}>🔖 {t('saveSermon')}</button>
                   <button onClick={()=>setActivePage('sunday')} className="btn btn-outline" style={{flex:1,justifyContent:'center',gap:8}}>📋 {t('generateSundayPack')}</button>
                 </div>
+
+                {currentSermonId && (sermons.find(s=>s.id===currentSermonId)?.versions?.length > 0) && (
+                  <SectionBox title="↺ Version History">
+                    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                      {sermons.find(s=>s.id===currentSermonId).versions.map((v,i)=>(
+                        <div key={v.versionedAt} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:10,background:'var(--bg-primary)'}}>
+                          <span style={{fontSize:12.5,color:'var(--text-muted)'}}>{i===0?'Previous version':`${i+1} versions ago`} · {new Date(v.versionedAt).toLocaleString()}</span>
+                          <button onClick={async()=>{ if(await confirmAction('Restore this version? Your current edits will be kept as a version too.',{confirmLabel:'Restore'})){ restoreSermonVersion(currentSermonId, v.versionedAt); setSermon(v.content) } }} className="btn btn-outline btn-sm">Restore</button>
+                        </div>
+                      ))}
+                    </div>
+                  </SectionBox>
+                )}
+
+                <SectionBox title="🔍 Sermon Review">
+                  <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:10,lineHeight:1.6}}>A quick structural check — scripture references worth double-checking, repetition, pacing. Not a verdict on doctrine; that's yours to judge.</p>
+                  <button onClick={runReview} disabled={reviewing} className="btn btn-outline btn-sm" style={{marginBottom:review?12:0}}>
+                    {reviewing?<><span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span> Reviewing…</>:'Run review'}
+                  </button>
+                  {review && (
+                    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                      <p style={{fontSize:13.5,fontStyle:'italic',color:'var(--ink-700)'}}>{review.summary}</p>
+                      {review.estimatedMinutes!=null && <p style={{fontSize:12.5,color:'var(--text-muted)'}}>Estimated length: ~{review.estimatedMinutes} min</p>}
+                      {review.concerns?.length>0 && (
+                        <div>
+                          <div style={{fontSize:11,fontWeight:500,color:'var(--terra-500)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Worth a look</div>
+                          {review.concerns.map((c,i)=>(
+                            <div key={i} style={{display:'flex',gap:8,padding:'6px 0',borderBottom:i<review.concerns.length-1?'1px solid var(--border-subtle)':'none'}}>
+                              <span className="tag tag-ink" style={{fontSize:10,flexShrink:0,alignSelf:'flex-start'}}>{c.area}</span>
+                              <p style={{fontSize:13,color:'var(--ink-700)',lineHeight:1.6}}>{c.note}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {review.concerns?.length===0 && <p style={{fontSize:13,color:'var(--sage-600)'}}>No structural concerns flagged — still worth your own read-through before preaching.</p>}
+                      {review.strengths?.length>0 && (
+                        <div>
+                          <div style={{fontSize:11,fontWeight:500,color:'var(--sage-600)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Working well</div>
+                          {review.strengths.map((s,i)=><p key={i} style={{fontSize:13,color:'var(--ink-700)',lineHeight:1.6}}>• {s}</p>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </SectionBox>
               </div>
             )}
           </motion.div>
@@ -303,7 +372,7 @@ export default function SermonPage() {
                         {s.content?.theme&&<div style={{fontSize:13,color:'var(--text-secondary)',marginTop:4}}>{s.content.theme}</div>}
                       </div>
                       <div style={{display:'flex',gap:6}}>
-                        <button onClick={()=>{setSermon(s.content);setForm({topic:s.topic,scripture:s.content?.mainText||'',audience:s.audience||'General congregation',denomination:s.denomination||'Pentecostal / Charismatic',length:s.length||'45-minute sermon',tone:s.tone||'Inspirational',translation:s.translation||'KJV'});setTab('edit')}} className="btn btn-gold btn-sm">{t('openSermon')}</button>
+                        <button onClick={()=>{setSermon(s.content);setCurrentSermonId(s.id);setForm({topic:s.topic,scripture:s.content?.mainText||'',audience:s.audience||'General congregation',denomination:s.denomination||'Pentecostal / Charismatic',length:s.length||'45-minute sermon',tone:s.tone||'Inspirational',translation:s.translation||'KJV'});setTab('edit')}} className="btn btn-gold btn-sm">{t('openSermon')}</button>
                         <button onClick={async()=>{if(await confirmAction('Delete this sermon?',{tone:'danger',confirmLabel:'Delete',detail:'This cannot be undone.'})){deleteSermon(s.id); showToast(t('removed'), '🗑')}}} className="btn btn-outline btn-sm" style={{color:'var(--terra-500)'}}>🗑</button>
                       </div>
                     </div>
@@ -319,16 +388,22 @@ export default function SermonPage() {
       <AnimatePresence>
         {preachMode&&sermon&&(
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
-            style={{position:'fixed',inset:0,background:'#FAF7F2',zIndex:500,overflowY:'auto',padding:'40px 32px'}}>
-            <div style={{maxWidth:680,margin:'0 auto'}}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:32}}>
-                <h1 style={{fontFamily:'var(--font-serif)',fontSize:28,fontWeight:500}}>{sermon.title}</h1>
-                <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                  <div style={{fontSize:24,fontWeight:600,fontVariantNumeric:'tabular-nums',color:'var(--gold-700)'}}>{`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`}</div>
-                  <button onClick={()=>setTimerOn(v=>!v)} className="btn btn-outline btn-sm">{timerOn?'⏸':'▶'}</button>
-                  <button onClick={()=>{setPreachMode(false);setTimerOn(false);setElapsed(0)}} className="btn btn-outline btn-sm">✕ {t('preachModeExit')}</button>
-                </div>
+            className="preach-mode-print"
+            style={{position:'fixed',inset:0,background:'#FAF7F2',zIndex:500,display:'flex',flexDirection:'column'}}>
+            <div className="no-print" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 32px',borderBottom:'1px solid var(--border-subtle)',flexWrap:'wrap',gap:10}}>
+              <h1 style={{fontFamily:'var(--font-serif)',fontSize:22,fontWeight:500}}>{sermon.title}</h1>
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                <div style={{fontSize:20,fontWeight:600,fontVariantNumeric:'tabular-nums',color:'var(--gold-700)'}}>{`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`}</div>
+                <button onClick={()=>setTimerOn(v=>!v)} className="btn btn-outline btn-sm">{timerOn?'⏸':'▶'}</button>
+                <button onClick={()=>setPulpitScale(s=>Math.max(0.8,s-0.1))} className="btn btn-outline btn-sm" title="Smaller text">A−</button>
+                <button onClick={()=>setPulpitScale(s=>Math.min(1.8,s+0.1))} className="btn btn-outline btn-sm" title="Larger text — pulpit mode">A+</button>
+                <button onClick={()=>setTeleprompterOn(v=>!v)} className="btn btn-outline btn-sm" style={{color:teleprompterOn?'var(--terra-500)':undefined}} title="Auto-scroll like a teleprompter">📜 {teleprompterOn?'Scrolling':'Teleprompter'}</button>
+                <button onClick={()=>window.print()} className="btn btn-outline btn-sm" title="Print-ready sermon">🖨 Print</button>
+                <button onClick={()=>{setPreachMode(false);setTimerOn(false);setElapsed(0);setTeleprompterOn(false)}} className="btn btn-outline btn-sm">✕ {t('preachModeExit')}</button>
               </div>
+            </div>
+            <div ref={preachScrollRef} style={{flex:1,overflowY:'auto',padding:'32px',zoom:pulpitScale}}>
+            <div style={{maxWidth:680,margin:'0 auto'}}>
               <div style={{fontSize:20,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--gold-700)',marginBottom:24}}>{sermon.mainText}</div>
               <div style={{fontSize:18,lineHeight:1.9,color:'var(--ink-800)',marginBottom:24}}>{sermon.introduction}</div>
               {sermon.points?.map((p,i)=>(
@@ -343,6 +418,7 @@ export default function SermonPage() {
                 <div style={{fontSize:16,fontWeight:600,marginBottom:10,color:'var(--gold-300)'}}>{t('preachModeAltarCall')}</div>
                 <div style={{fontSize:18,fontFamily:'var(--font-serif)',fontStyle:'italic',lineHeight:1.8}}>{sermon.altarCall}</div>
               </div>
+            </div>
             </div>
           </motion.div>
         )}

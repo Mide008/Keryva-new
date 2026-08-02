@@ -18,6 +18,7 @@ function buildNav(t){
       {id:'devotional',  icon:'leaf',label:t('navDevotional')},
       {id:'warfare',     icon:'sword',label:t('navWarfare')},
       {id:'confessions', icon:'heart',label:t('navConfessions')},
+      {id:'fasting',     icon:'leaf',label:t('navFasting')},
       {id:'prayer', icon:'praying',label:t('navPrayer')},
     ]},
     {label:t('navMinistrySection'),items:[
@@ -28,6 +29,10 @@ function buildNav(t){
     ]},
     {label:t('navLibrarySection'),items:[
       {id:'saved',  icon:'bookmark',label:t('navSaved')},
+      {id:'projects', icon:'library',label:t('navProjects')},
+      {id:'calendar', icon:'calendar',label:t('navCalendar')},
+      {id:'service', icon:'church',label:t('navService')},
+      {id:'vault', icon:'library',label:t('navVault')},
     ]},
   ]
 }
@@ -71,8 +76,11 @@ function Inner({activePage,go,user,NAV,t,collapsed,onToggleCollapse}){
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%',padding:collapsed?'0 6px':'0 10px',overflow:'hidden'}}>
       <div style={{padding:collapsed?'22px 0 16px':'22px 12px 16px',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0,textAlign:collapsed?'center':'left',position:'relative'}}>
-        <div style={{fontFamily:'var(--font-serif)',fontSize:collapsed?18:24,fontWeight:600,color:'var(--gold-300)',letterSpacing:'-0.01em',lineHeight:1}}>{collapsed?'R':'Keryva'}</div>
-        {!collapsed&&<div style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'rgba(250,247,242,0.25)',marginTop:4}}>The Living Word · OmniCraft Studios</div>}
+        <div style={{display:'flex',alignItems:'center',gap:10,justifyContent:collapsed?'center':'flex-start'}}>
+          <img src="/logo-mark.png" srcSet="/logo-mark.png 1x, /logo-mark@2x.png 2x" alt="Keryva" width={collapsed?28:32} height={collapsed?28:32} style={{borderRadius:8,flexShrink:0}}/>
+          {!collapsed&&<div style={{fontFamily:'var(--font-serif)',fontSize:22,fontWeight:600,color:'var(--gold-300)',letterSpacing:'-0.01em',lineHeight:1}}>Keryva</div>}
+        </div>
+        {!collapsed&&<div style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'rgba(250,247,242,0.25)',marginTop:6}}>From Scripture to Service · OmniCraft Studios</div>}
         {onToggleCollapse&&(
           <button onClick={onToggleCollapse} aria-label={collapsed?'Expand sidebar':'Collapse sidebar'}
             title={collapsed?'Expand sidebar':'Collapse sidebar'}
@@ -107,7 +115,7 @@ function Inner({activePage,go,user,NAV,t,collapsed,onToggleCollapse}){
       </nav>
       <div style={{padding:collapsed?'12px 0':'12px 4px',borderTop:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
         <button onClick={()=>go('settings')} title={collapsed?t('settings'):undefined} style={{display:'flex',alignItems:'center',justifyContent:collapsed?'center':'flex-start',gap:collapsed?0:10,padding:collapsed?'8px 0':'10px var(--space-4)',borderRadius:'var(--radius-md)',color:activePage==='settings'?'var(--gold-300)':'rgba(250,247,242,0.52)',background:activePage==='settings'?'rgba(212,168,75,0.12)':'transparent',width:'100%',border:'none',cursor:'pointer',transition:'all var(--dur-fast) ease'}}>
-          <div style={{width:28,height:28,borderRadius:'50%',background:user?.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-700),var(--gold-500))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'var(--ink-900)',flexShrink:0}}>{!user?.photo&&(user?.name||'R').slice(0,2).toUpperCase()}</div>
+          <div style={{width:28,height:28,borderRadius:'50%',background:user?.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-700),var(--gold-500))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'var(--ink-900)',flexShrink:0}}>{!user?.photo&&(user?.name||'U').slice(0,2).toUpperCase()}</div>
           {!collapsed&&(
             <>
               <div style={{flex:1,minWidth:0}}>

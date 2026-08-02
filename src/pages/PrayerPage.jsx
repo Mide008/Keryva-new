@@ -239,12 +239,16 @@ export default function PrayerPage(){
                         <div style={{fontSize:11,fontWeight:500,color:'var(--sage-600)',marginBottom:4}}>{t('followUpNote')}</div>
                         <p style={{fontSize:13,color:'var(--ink-600)'}}>{p.followUpNotes}</p>
                       </div>}
+                      {p.testimony&&<div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
+                        <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>✨ Testimony</div>
+                        <p style={{fontSize:13,color:'var(--ink-700)',fontStyle:'italic'}}>{p.testimony}</p>
+                      </div>}
                       {aiNote[p.id]&&<div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
                         <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>{t('aiEncouragement')}</div>
                         <p style={{fontSize:13,color:'var(--ink-700)',lineHeight:1.65}}>{aiNote[p.id]}</p>
                       </div>}
                       <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                        {p.status==='praying'&&<button onClick={()=>updatePrayer(p.id,{status:'answered',answeredDate:new Date().toISOString().split('T')[0]})} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'1px solid var(--sage-300)',gap:6}}>{t('markAnswered')}</button>}
+                        {p.status==='praying'&&<button onClick={()=>{const testimony=prompt('Mark as answered — want to add a short testimony? (optional, leave blank to skip)');updatePrayer(p.id,{status:'answered',answeredDate:new Date().toISOString().split('T')[0],testimony:testimony||undefined})}} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'1px solid var(--sage-300)',gap:6}}>{t('markAnswered')}</button>}
                         <button onClick={()=>genEncouragement(p)} disabled={loading} className="btn btn-sm" style={{background:'var(--gold-100)',color:'var(--gold-700)',border:'1px solid var(--gold-300)',gap:6}}>{t('encouragement')}</button>
                         <button onClick={()=>shareWA(p)} className="btn btn-sm" style={{background:'var(--bg-card)',border:'1px solid var(--border-subtle)',gap:6}}>{t('sharePrayer')}</button>
                         {mode==='desk'&&<>

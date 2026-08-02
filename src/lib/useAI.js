@@ -54,7 +54,7 @@ export function useAI() {
   }, [ask])
 
   const buildSermon = useCallback(async ({ topic, audience, denomination, length, format, translation = 'KJV' }) => {
-    return ask(`Build a complete ${format} sermon on: "${topic}"\nAudience: ${audience}\nStyle: ${denomination}\nLength: ${length}\nTranslation: ${translation}\n\nTITLE: [title]\n\nINTRODUCTION:\n[3-4 sentences]\n\nPOINT 1: [title]\nVERSE: [ref] — [full text in ${translation}]\nEXPOSITION: [2-3 sentences]\n\nPOINT 2: [title]\nVERSE: [ref] — [full text in ${translation}]\nEXPOSITION: [2-3 sentences]\n\nPOINT 3: [title]\nVERSE: [ref] — [full text in ${translation}]\nEXPOSITION: [2-3 sentences]\n\nAPPLICATION:\n[3-4 sentences]\n\nALTAR CALL:\n[2-3 sentences]\n\n⚠️ DISCLAIMER: AI-assisted. Verify all scripture before preaching.`)
+    return ask(`Build a complete ${format} sermon on: "${topic}"\nAudience: ${audience}\nStyle: ${denomination}\nLength: ${length}\nTranslation: ${translation}\n\nTITLE: [title]\n\nINTRODUCTION:\n[3-4 sentences]\n\nPOINT 1: [title]\nVERSE: [ref] — [full text in ${translation}]\nEXPOSITION: [2-3 sentences]\n\nPOINT 2: [title]\nVERSE: [ref] — [full text in ${translation}]\nEXPOSITION: [2-3 sentences]\n\nPOINT 3: [title]\nVERSE: [ref] — [full text in ${translation}]\nEXPOSITION: [2-3 sentences]\n\nAPPLICATION:\n[3-4 sentences]\n\nALTAR CALL:\n[2-3 sentences]\n\n⚠️ Please verify all scripture and preach in your own voice.`)
   }, [ask])
 
   const buildStudyGuide = useCallback(async ({ theme, passage, translation = 'KJV' }) => {
