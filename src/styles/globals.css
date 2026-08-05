@@ -28,7 +28,7 @@
 }
 [data-theme="dark"] {
   --bg-primary:#15110B;--bg-secondary:#1B160E;--bg-card:#211A11;--bg-elevated:#271F14;
-  --text-primary:#F3EDE1;--text-secondary:#D3C6B3;--text-muted:#9C8B76;--text-inverse:#15110B;
+  --text-primary:#F3EDE1;--text-secondary:#D3C6B3;--text-muted:#9C8B76;
   --text-gold:#E3B75C;--text-gold-soft:#F0DAAD;
   --border-subtle:rgba(255,255,255,0.07);--border-default:rgba(255,255,255,0.13);--border-strong:rgba(255,255,255,0.2);--border-gold:rgba(212,168,75,0.32);
   --gold-50:rgba(212,168,75,0.10);--gold-100:rgba(212,168,75,0.16);
@@ -38,6 +38,12 @@
   --shadow-md:0 4px 16px rgba(0,0,0,0.35),0 2px 6px rgba(0,0,0,0.22);
   --shadow-lg:0 12px 40px rgba(0,0,0,0.4),0 4px 12px rgba(0,0,0,0.25);
   --shadow-xl:0 24px 64px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.3);
+  /* Gold shades used app-wide as TEXT color (dark gold text meant to read on
+     a light card). Left at light-mode values, that text rendered dark-on-dark
+     and disappeared. Remapped to light-on-dark equivalents. Verified safe:
+     these are never used as a background anywhere in the app. */
+  --gold-900:#F0DAAD;--gold-800:#E8C98A;--gold-700:#E3B75C;--gold-600:#DEAD6A;
+  --ink-600:#C4B8A8;
 }
 [data-theme="dark"] body{background:var(--bg-primary);}
 [data-theme="dark"] .topbar{background:rgba(21,17,11,0.9)!important;}
