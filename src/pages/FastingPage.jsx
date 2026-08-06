@@ -144,12 +144,12 @@ export default function FastingPage() {
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div className="card-gold">
                   <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gold-700)', marginBottom: 8 }}>✦ Purpose</div>
-                  <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontStyle: 'italic', color: 'var(--ink-800)', lineHeight: 1.75 }}>{result.purpose}</p>
+                  <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{result.purpose}</p>
                 </div>
 
                 <div className="card-elevated">
                   <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>What to expect</div>
-                  <p style={{ fontSize: 14, color: 'var(--ink-700)', lineHeight: 1.7 }}>{result.whatToExpect}</p>
+                  <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{result.whatToExpect}</p>
                 </div>
 
                 <div>
@@ -178,7 +178,7 @@ export default function FastingPage() {
                     {result.dailyPrayerFocus?.map((p, i) => (
                       <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <span style={{ color: 'var(--terra-500)', fontSize: 13, marginTop: 2 }}>{i + 1}.</span>
-                        <p style={{ fontSize: 14, color: 'var(--ink-700)', lineHeight: 1.7 }}>{p}</p>
+                        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{p}</p>
                       </div>
                     ))}
                   </div>
@@ -190,7 +190,7 @@ export default function FastingPage() {
                     {result.practicalTips?.map((p, i) => (
                       <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <span style={{ color: 'var(--gold-500)', fontSize: 16, lineHeight: 1.6 }}>✦</span>
-                        <p style={{ fontSize: 14, color: 'var(--ink-700)', lineHeight: 1.7 }}>{p}</p>
+                        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{p}</p>
                       </div>
                     ))}
                   </div>
@@ -202,7 +202,7 @@ export default function FastingPage() {
                 </div>
 
                 <div style={{ background: 'var(--sage-100)', borderRadius: 16, padding: 20 }}>
-                  <p style={{ fontSize: 14, color: 'var(--sage-600)', lineHeight: 1.75, fontStyle: 'italic' }}>{result.encouragement}</p>
+                  <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.75, fontStyle: 'italic' }}>{result.encouragement}</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -284,7 +284,7 @@ function FastingEntryCard({ entry: e, services, langLabel }) {
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Journal ({e.journal.length})</div>
           {e.journal.slice(0, 5).map((j, i) => (
-            <div key={i} style={{ fontSize: 13, color: 'var(--ink-700)', lineHeight: 1.6 }}>
+            <div key={i} style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
               <span style={{ color: 'var(--text-muted)', fontSize: 11.5 }}>{j.date}</span>
               {j.reflection && <p>{j.reflection}</p>}
               {j.lesson && <p style={{ color: 'var(--text-muted)' }}>Lesson: {j.lesson}</p>}
@@ -304,14 +304,14 @@ function FastingEntryCard({ entry: e, services, langLabel }) {
 
       {endReview && (
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-subtle)', background: 'var(--sage-100)', borderRadius: 12, padding: 16 }}>
-          <p style={{ fontSize: 13.5, fontStyle: 'italic', color: 'var(--sage-600)', lineHeight: 1.7 }}>{endReview.summary}</p>
+          <p style={{ fontSize: 13.5, fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.7 }}>{endReview.summary}</p>
           {endReview.answeredPrayers?.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--sage-600)', marginBottom: 4 }}>Answered prayers</div>
-              {endReview.answeredPrayers.map((p, i) => <p key={i} style={{ fontSize: 13, color: 'var(--ink-700)' }}>• {p}</p>)}
+              {endReview.answeredPrayers.map((p, i) => <p key={i} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>• {p}</p>)}
             </div>
           )}
-          <p style={{ fontSize: 13, color: 'var(--ink-700)', marginTop: 8, lineHeight: 1.7 }}>{endReview.encouragement}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.7 }}>{endReview.encouragement}</p>
         </div>
       )}
     </div>

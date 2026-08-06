@@ -268,7 +268,7 @@ export default function SermonPage() {
                       <div style={{width:28,height:28,borderRadius:'50%',background:'var(--gold-500)',color:'var(--ink-900)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,flexShrink:0}}>{i+1}</div>
                       <input className="input-field" style={{fontFamily:'var(--font-serif)',fontSize:16,fontWeight:500,border:'none',background:'transparent',flex:1}} value={pt.title} onChange={e=>setSermon(s=>({...s,points:s.points.map((p,j)=>j===i?{...p,title:e.target.value}:p)}))}/>
                     </div>
-                    {pt.scripture&&<div style={{background:'rgba(255,255,255,0.7)',borderRadius:8,padding:'10px 14px',marginBottom:10,borderLeft:'3px solid var(--gold-400)',fontSize:14,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--ink-700)',lineHeight:1.7}}>{pt.scripture}</div>}
+                    {pt.scripture&&<div style={{background:'rgba(255,255,255,0.7)',borderRadius:8,padding:'10px 14px',marginBottom:10,borderLeft:'3px solid var(--gold-400)',fontSize:14,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--text-secondary)',lineHeight:1.7}}>{pt.scripture}</div>}
                     <textarea className="textarea-field" style={{fontSize:14,minHeight:80}} value={pt.content} onChange={e=>setSermon(s=>({...s,points:s.points.map((p,j)=>j===i?{...p,content:e.target.value}:p)}))}/>
                     <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
                       <button onClick={()=>improve(`point ${i+1}`,pt.content)} disabled={improving!=null} className="btn btn-outline btn-sm" style={{gap:5}}>{t('improveButton')}</button>
@@ -280,7 +280,7 @@ export default function SermonPage() {
                 {sermon.illustrations?.length>0&&(
                   <SectionBox title={t('illustrationsLabel')||'Illustrations'}>
                     {sermon.illustrations.map((il,i)=>(
-                      <div key={i} style={{padding:'8px 0',borderBottom:i<sermon.illustrations.length-1?'1px solid var(--border-subtle)':'none',fontSize:14,color:'var(--ink-700)',lineHeight:1.65}}>💡 {il}</div>
+                      <div key={i} style={{padding:'8px 0',borderBottom:i<sermon.illustrations.length-1?'1px solid var(--border-subtle)':'none',fontSize:14,color:'var(--text-secondary)',lineHeight:1.65}}>💡 {il}</div>
                     ))}
                   </SectionBox>
                 )}
@@ -291,11 +291,11 @@ export default function SermonPage() {
 
                 {sermon.prayerPoints?.length>0&&(
                   <SectionBox title={t('prayerPointsLabel')}>
-                    {sermon.prayerPoints.map((pp,i)=><div key={i} style={{padding:'6px 0',borderBottom:'1px solid var(--border-subtle)',fontSize:14,color:'var(--ink-700)'}}>• {pp}</div>)}
+                    {sermon.prayerPoints.map((pp,i)=><div key={i} style={{padding:'6px 0',borderBottom:'1px solid var(--border-subtle)',fontSize:14,color:'var(--text-secondary)'}}>• {pp}</div>)}
                   </SectionBox>
                 )}
 
-                {sermon.preachingNotes&&<SectionBox title={t('preachingNotesLabel')}><p style={{fontSize:14,lineHeight:1.7,whiteSpace:'pre-wrap',color:'var(--ink-700)'}}>{sermon.preachingNotes}</p></SectionBox>}
+                {sermon.preachingNotes&&<SectionBox title={t('preachingNotesLabel')}><p style={{fontSize:14,lineHeight:1.7,whiteSpace:'pre-wrap',color:'var(--text-secondary)'}}>{sermon.preachingNotes}</p></SectionBox>}
 
                 <div style={{display:'flex',gap:10,paddingTop:8}}>
                   <button onClick={save} className="btn btn-gold" style={{flex:1,justifyContent:'center',gap:8}}>🔖 {t('saveSermon')}</button>
@@ -322,7 +322,7 @@ export default function SermonPage() {
                   </button>
                   {review && (
                     <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                      <p style={{fontSize:13.5,fontStyle:'italic',color:'var(--ink-700)'}}>{review.summary}</p>
+                      <p style={{fontSize:13.5,fontStyle:'italic',color:'var(--text-secondary)'}}>{review.summary}</p>
                       {review.estimatedMinutes!=null && <p style={{fontSize:12.5,color:'var(--text-muted)'}}>Estimated length: ~{review.estimatedMinutes} min</p>}
                       {review.concerns?.length>0 && (
                         <div>
@@ -330,7 +330,7 @@ export default function SermonPage() {
                           {review.concerns.map((c,i)=>(
                             <div key={i} style={{display:'flex',gap:8,padding:'6px 0',borderBottom:i<review.concerns.length-1?'1px solid var(--border-subtle)':'none'}}>
                               <span className="tag tag-ink" style={{fontSize:10,flexShrink:0,alignSelf:'flex-start'}}>{c.area}</span>
-                              <p style={{fontSize:13,color:'var(--ink-700)',lineHeight:1.6}}>{c.note}</p>
+                              <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.6}}>{c.note}</p>
                             </div>
                           ))}
                         </div>
@@ -339,7 +339,7 @@ export default function SermonPage() {
                       {review.strengths?.length>0 && (
                         <div>
                           <div style={{fontSize:11,fontWeight:500,color:'var(--sage-600)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Working well</div>
-                          {review.strengths.map((s,i)=><p key={i} style={{fontSize:13,color:'var(--ink-700)',lineHeight:1.6}}>• {s}</p>)}
+                          {review.strengths.map((s,i)=><p key={i} style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.6}}>• {s}</p>)}
                         </div>
                       )}
                     </div>
@@ -405,7 +405,7 @@ export default function SermonPage() {
             <div ref={preachScrollRef} style={{flex:1,overflowY:'auto',padding:'32px',zoom:pulpitScale}}>
             <div style={{maxWidth:680,margin:'0 auto'}}>
               <div style={{fontSize:20,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--gold-700)',marginBottom:24}}>{sermon.mainText}</div>
-              <div style={{fontSize:18,lineHeight:1.9,color:'var(--ink-800)',marginBottom:24}}>{sermon.introduction}</div>
+              <div style={{fontSize:18,lineHeight:1.9,color:'var(--text-secondary)',marginBottom:24}}>{sermon.introduction}</div>
               {sermon.points?.map((p,i)=>(
                 <div key={i} style={{marginBottom:28,borderLeft:'4px solid var(--gold-400)',paddingLeft:20}}>
                   <div style={{fontSize:20,fontWeight:600,fontFamily:'var(--font-serif)',marginBottom:8}}>{i+1}. {p.title}</div>
@@ -440,7 +440,7 @@ function SectionBox({title,children,dark}){
 function EditableSection({title,sectionKey,value,onChange,onImprove,improving,showToast,dark,t}){
   return(
     <SectionBox title={title} dark={dark}>
-      <textarea className="textarea-field" style={{fontSize:14,minHeight:100,background:dark?'rgba(255,255,255,0.08)':'var(--bg-card)',color:dark?'rgba(250,247,242,0.88)':'var(--ink-700)',border:dark?'1px solid rgba(255,255,255,0.1)':'1px solid var(--border-default)'}} value={value} onChange={e=>onChange(e.target.value)}/>
+      <textarea className="textarea-field" style={{fontSize:14,minHeight:100,background:dark?'rgba(255,255,255,0.08)':'var(--bg-card)',color:dark?'rgba(250,247,242,0.88)':'var(--text-secondary)',border:dark?'1px solid rgba(255,255,255,0.1)':'1px solid var(--border-default)'}} value={value} onChange={e=>onChange(e.target.value)}/>
       <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
         <button onClick={onImprove} disabled={improving!=null} className="btn btn-outline btn-sm" style={{gap:5}}>
           {improving?<span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span>:t('improveButton')}

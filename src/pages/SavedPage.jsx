@@ -116,8 +116,6 @@ export default function SavedPage(){
               <span style={{fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap'}}>{filtered.length} verse{filtered.length!==1?'s':''}</span>
             </div>
 
-            {/* AI result now renders inline under the clicked card, not here */}
-
             {filtered.length===0
               ?<EmptyState icon="🔖" headline={t('noSavedVersesTitle')} body={t('noSavedVersesBody')} ctaLabel={t('exploreScriptures')} onCta={()=>setActivePage('inspire')}/>
               :<div style={{display:'flex',flexDirection:'column',gap:14}}>
@@ -135,7 +133,7 @@ export default function SavedPage(){
                       </div>
                       <p className="verse-text">{v.text}</p>
                       {note?.note&&<div style={{background:'var(--ink-50)',borderLeft:'3px solid var(--gold-400)',borderRadius:'0 8px 8px 0',padding:'8px 12px',marginTop:8}}>
-                        <p style={{fontSize:13,color:'var(--ink-600)',lineHeight:1.6,fontStyle:'italic'}}>{note.note}</p>
+                        <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.6,fontStyle:'italic'}}>{note.note}</p>
                       </div>}
                       {/* Primary actions */}
                       <div style={{display:'flex',gap:8,marginTop:14,paddingTop:12,borderTop:'1px solid var(--border-subtle)',flexWrap:'wrap'}}>
@@ -165,7 +163,7 @@ export default function SavedPage(){
                                 <button onClick={()=>{setActionVerse(null);setAiResult('')}} style={{background:'none',border:'none',cursor:'pointer',fontSize:18,color:'var(--text-muted)'}}>×</button>
                               </div>
                               {loading?<div className="loading-dots"><div className="loading-dot"/><div className="loading-dot"/><div className="loading-dot"/></div>
-                                :<p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.75,whiteSpace:'pre-wrap'}}>{aiResult}</p>
+                                :<p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.75,whiteSpace:'pre-wrap'}}>{aiResult}</p>
                               }
                             </div>
                           </motion.div>

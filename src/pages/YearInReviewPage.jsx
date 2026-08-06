@@ -53,7 +53,7 @@ export default function YearInReviewPage() {
       {stats.testimonies.length > 0 && (
         <div className="card">
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--sage-600)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>✨ Testimonies this year</div>
-          {stats.testimonies.map((t, i) => <p key={i} style={{ fontSize: 13.5, color: 'var(--ink-700)', marginBottom: 8, fontStyle: 'italic' }}>"{t}"</p>)}
+          {stats.testimonies.map((t, i) => <p key={i} style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginBottom: 8, fontStyle: 'italic' }}>"{t}"</p>)}
         </div>
       )}
 

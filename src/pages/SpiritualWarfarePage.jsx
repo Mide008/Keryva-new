@@ -128,12 +128,12 @@ export default function SpiritualWarfarePage(){
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }} style={{ display:'flex', flexDirection:'column', gap:16 }}>
                 <div className="card-elevated">
                   <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--gold-700)', marginBottom:8 }}>✦ Your Situation</div>
-                  <p style={{ fontSize:14, color:'var(--ink-700)', lineHeight:1.7 }}>{result.situationSummary}</p>
+                  <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.7 }}>{result.situationSummary}</p>
                 </div>
 
                 <div className="card-gold">
                   <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--gold-700)', marginBottom:8 }}>✦ The Solution</div>
-                  <p style={{ fontFamily:'var(--font-serif)', fontSize:16, fontStyle:'italic', color:'var(--ink-800)', lineHeight:1.75 }}>{result.solution}</p>
+                  <p style={{ fontFamily:'var(--font-serif)', fontSize:16, fontStyle:'italic', color:'var(--text-secondary)', lineHeight:1.75 }}>{result.solution}</p>
                 </div>
 
                 <div>
@@ -162,7 +162,7 @@ export default function SpiritualWarfarePage(){
                     {result.declarations?.map((d,i)=>(
                       <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
                         <span style={{ color:'var(--gold-500)', fontSize:16, lineHeight:1.6 }}>✦</span>
-                        <p style={{ fontSize:14.5, color:'var(--ink-800)', lineHeight:1.7, fontWeight:500 }}>{d}</p>
+                        <p style={{ fontSize:14.5, color:'var(--text-secondary)', lineHeight:1.7, fontWeight:500 }}>{d}</p>
                       </div>
                     ))}
                   </div>
@@ -174,7 +174,7 @@ export default function SpiritualWarfarePage(){
                     {result.prayerPoints?.map((p,i)=>(
                       <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
                         <span style={{ color:'var(--terra-500)', fontSize:13, marginTop:2 }}>{i+1}.</span>
-                        <p style={{ fontSize:14, color:'var(--ink-700)', lineHeight:1.7 }}>{p}</p>
+                        <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.7 }}>{p}</p>
                       </div>
                     ))}
                   </div>
@@ -186,7 +186,7 @@ export default function SpiritualWarfarePage(){
                 </div>
 
                 <div style={{ background:'var(--sage-100)', borderRadius:16, padding:20 }}>
-                  <p style={{ fontSize:14, color:'var(--sage-600)', lineHeight:1.75, fontStyle:'italic' }}>{result.encouragement}</p>
+                  <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.75, fontStyle:'italic' }}>{result.encouragement}</p>
                 </div>
 
                 <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>

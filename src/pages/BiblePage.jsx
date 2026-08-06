@@ -243,7 +243,7 @@ export default function BiblePage(){
               {!chapterLoading&&verses.map(v=>(
                 <span key={v.v} id={`verse-${v.v}`} style={{cursor:'pointer'}} onClick={()=>openAction(v)}>
                   <sup style={{fontSize:10,fontWeight:600,color:'var(--gold-600)',marginRight:3,verticalAlign:'super'}}>{v.v}</sup>
-                  <span style={{fontFamily:'var(--font-serif)',fontSize:'clamp(16px,2vw,18px)',color:selected?.v===v.v?'var(--ink-900)':'var(--ink-700)',background:selected?.v===v.v?'rgba(212,168,75,0.18)':'transparent',borderRadius:3,padding:'1px 2px',transition:'all var(--dur-fast) ease',lineHeight:1.9}}>
+                  <span style={{fontFamily:'var(--font-serif)',fontSize:'clamp(16px,2vw,18px)',color:selected?.v===v.v?'var(--text-primary)':'var(--text-secondary)',background:selected?.v===v.v?'rgba(212,168,75,0.18)':'transparent',borderRadius:3,padding:'1px 2px',transition:'all var(--dur-fast) ease',lineHeight:1.9}}>
                     {v.text}{' '}
                   </span>
                 </span>
@@ -270,7 +270,7 @@ export default function BiblePage(){
               <div style={{width:36,height:4,background:'var(--ink-200)',borderRadius:2,margin:'0 auto 20px'}}/>
               <div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:12,padding:14,marginBottom:16}}>
                 <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:6}}>{book?.name} {ch}:{selected.v} · {tran}</div>
-                <p style={{fontFamily:'var(--font-serif)',fontSize:15,fontStyle:'italic',color:'var(--ink-800)',lineHeight:1.7}}>{selected.text}</p>
+                <p style={{fontFamily:'var(--font-serif)',fontSize:15,fontStyle:'italic',color:'var(--text-secondary)',lineHeight:1.7}}>{selected.text}</p>
               </div>
               {/* Primary actions */}
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
@@ -310,7 +310,7 @@ export default function BiblePage(){
                   <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:8}}>
                     {aiType==='explain'?t('explanation'):aiType==='preach'?t('preachingAngles'):aiType==='counsel'?t('counsellingAngle'):t('youthFriendlyLabel')}
                   </div>
-                  <p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.75,whiteSpace:'pre-wrap'}}>{aiResult}</p>
+                  <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.75,whiteSpace:'pre-wrap'}}>{aiResult}</p>
                   <button onClick={()=>{navigator.clipboard.writeText(aiResult).catch(()=>{});showToast(t('copied'),'📋')}} style={{fontSize:12,color:'var(--gold-700)',background:'none',border:'none',cursor:'pointer',marginTop:8}}>📋 {t('copy')}</button>
                 </motion.div>
               )}

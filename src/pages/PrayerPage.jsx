@@ -188,8 +188,8 @@ export default function PrayerPage(){
                   }}>{v.ref} · {v.translation}</div>
                   <VerifiedBadge status={v.verifyStatus||'checking'}/>
                 </div>
-                <p style={{fontFamily:'var(--font-serif)',fontSize:15,fontStyle:'italic',lineHeight:1.75,color:'var(--ink-800)',margin:'8px 0'}}>{v.text}</p>
-                {v.note&&<p style={{fontSize:13,color:'var(--ink-500)',lineHeight:1.6}}>{v.note}</p>}
+                <p style={{fontFamily:'var(--font-serif)',fontSize:15,fontStyle:'italic',lineHeight:1.75,color:'var(--text-secondary)',margin:'8px 0'}}>{v.text}</p>
+                {v.note&&<p style={{fontSize:13,color:'var(--text-muted)',lineHeight:1.6}}>{v.note}</p>}
               </div>
             ))}
             <button onClick={()=>setScriptures([])} className="btn btn-ghost btn-sm" style={{alignSelf:'flex-end'}}>Dismiss ×</button>
@@ -234,18 +234,18 @@ export default function PrayerPage(){
                 {expanded===p.id&&(
                   <motion.div initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} style={{overflow:'hidden'}}>
                     <div style={{padding:'0 16px 16px',borderTop:'1px solid var(--border-subtle)'}}>
-                      <p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.7,margin:'12px 0'}}>{p.text}</p>
+                      <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.7,margin:'12px 0'}}>{p.text}</p>
                       {p.followUpNotes&&<div style={{background:'var(--sage-100)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
                         <div style={{fontSize:11,fontWeight:500,color:'var(--sage-600)',marginBottom:4}}>{t('followUpNote')}</div>
-                        <p style={{fontSize:13,color:'var(--ink-600)'}}>{p.followUpNotes}</p>
+                        <p style={{fontSize:13,color:'var(--text-muted)'}}>{p.followUpNotes}</p>
                       </div>}
                       {p.testimony&&<div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
                         <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>✨ Testimony</div>
-                        <p style={{fontSize:13,color:'var(--ink-700)',fontStyle:'italic'}}>{p.testimony}</p>
+                        <p style={{fontSize:13,color:'var(--text-secondary)',fontStyle:'italic'}}>{p.testimony}</p>
                       </div>}
                       {aiNote[p.id]&&<div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
                         <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>{t('aiEncouragement')}</div>
-                        <p style={{fontSize:13,color:'var(--ink-700)',lineHeight:1.65}}>{aiNote[p.id]}</p>
+                        <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.65}}>{aiNote[p.id]}</p>
                       </div>}
                       <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                         {p.status==='praying'&&<button onClick={()=>{const testimony=prompt('Mark as answered — want to add a short testimony? (optional, leave blank to skip)');updatePrayer(p.id,{status:'answered',answeredDate:new Date().toISOString().split('T')[0],testimony:testimony||undefined})}} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'1px solid var(--sage-300)',gap:6}}>{t('markAnswered')}</button>}

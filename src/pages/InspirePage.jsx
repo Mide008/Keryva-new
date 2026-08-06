@@ -221,7 +221,7 @@ export default function InspirePage() {
               <span className="verse-ref">{verse.reference}</span>
               <p className="verse-text">{verse.text || `[${verse.reference}]`}</p>
               {verse.reason && (
-                <p className="verse-note" style={{ fontSize: 13, color: 'var(--ink-500)' }}>
+                <p className="verse-note" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                   {verse.reason}
                 </p>
               )}

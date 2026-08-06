@@ -146,8 +146,8 @@ export default function DevotionalPage(){
                 <p className="verse-text">{devotional.verseText}</p>
               </div>
               <div className="card-elevated">
-                <h2 style={{ fontFamily:'var(--font-serif)', fontSize:20, fontWeight:500, color:'var(--ink-900)', marginBottom:12 }}>{devotional.title}</h2>
-                <p style={{ fontSize:14.5, color:'var(--ink-700)', lineHeight:1.8 }}>{devotional.reflection}</p>
+                <h2 style={{ fontFamily:'var(--font-serif)', fontSize:20, fontWeight:500, color:'var(--text-primary)', marginBottom:12 }}>{devotional.title}</h2>
+                <p style={{ fontSize:14.5, color:'var(--text-secondary)', lineHeight:1.8 }}>{devotional.reflection}</p>
                 {typeof window !== 'undefined' && window.speechSynthesis && (
                   <button onClick={() => {
                     window.speechSynthesis.cancel()
@@ -160,11 +160,11 @@ export default function DevotionalPage(){
               </div>
               <div className="card">
                 <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:8 }}>{t('todayApplication')}</div>
-                <p style={{ fontSize:14, color:'var(--ink-800)', lineHeight:1.7, fontWeight:500 }}>{devotional.application}</p>
+                <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.7, fontWeight:500 }}>{devotional.application}</p>
               </div>
               <div className="card" style={{ background:'var(--sage-100)' }}>
                 <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--sage-600)', marginBottom:8 }}>🙏 {t('prayer')}</div>
-                <p style={{ fontSize:14, color:'var(--sage-600)', lineHeight:1.75, fontStyle:'italic' }}>{devotional.prayer}</p>
+                <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.75, fontStyle:'italic' }}>{devotional.prayer}</p>
               </div>
               <div className="card-dark">
                 <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--gold-300)', marginBottom:8 }}>🕊 Declaration</div>

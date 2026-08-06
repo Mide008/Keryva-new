@@ -181,7 +181,7 @@ export default function StudyPage() {
                     {id:'wa',label:t('whatsappInvite'),content:guide.whatsappInvite},
                   ].filter(s=>s.content).map(s=>(
                     <Section key={s.id} id={s.id} label={s.label}>
-                      <p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.75,whiteSpace:'pre-line',paddingTop:12}}>{s.content}</p>
+                      <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.75,whiteSpace:'pre-line',paddingTop:12}}>{s.content}</p>
                       <button onClick={()=>{navigator.clipboard.writeText(s.content).catch(()=>{});showToast(t('copied'),'📋')}} style={{fontSize:12,color:'var(--gold-700)',background:'none',border:'none',cursor:'pointer',marginTop:8}}>{t('copySection')}</button>
                     </Section>
                   ))}

@@ -152,7 +152,7 @@ export default function SundayPackPage(){
                           <span style={{fontSize:13,fontWeight:500,color:'var(--text-primary)'}}>{label}</span>
                           <button onClick={()=>copySection(label,display)} style={{fontSize:12,color:'var(--gold-700)',background:'none',border:'none',cursor:'pointer'}}>{t('copy')}</button>
                         </div>
-                        <p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.75,whiteSpace:'pre-line'}}>{display}</p>
+                        <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.75,whiteSpace:'pre-line'}}>{display}</p>
                       </div>
                     )
                   })}

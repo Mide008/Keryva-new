@@ -56,7 +56,7 @@ export default function SocialPackPage(){
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
         {posts.map((p,i)=>(
           <div key={i} style={{background:'var(--bg-primary)',borderRadius:12,padding:14,position:'relative'}}>
-            <p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.7,paddingRight:60}}>{p}</p>
+            <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.7,paddingRight:60}}>{p}</p>
             <div style={{position:'absolute',top:10,right:10,display:'flex',gap:6}}>
               <button onClick={()=>copy(p)} style={{fontSize:14,background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}} title={t('copy')}>📋</button>
               <button onClick={()=>shareWA(p)} style={{fontSize:14,background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}} title={t('whatsapp')}>💬</button>
@@ -142,7 +142,7 @@ export default function SocialPackPage(){
                       <div style={{display:'flex',flexDirection:'column',gap:8}}>
                         {pack.quotes.map((q,i)=>(
                           <div key={i} style={{background:'white',borderRadius:10,padding:'12px 14px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
-                            <p style={{fontSize:14,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--ink-800)',lineHeight:1.65,flex:1}}>"{q}"</p>
+                            <p style={{fontSize:14,fontFamily:'var(--font-serif)',fontStyle:'italic',color:'var(--text-secondary)',lineHeight:1.65,flex:1}}>"{q}"</p>
                             <div style={{display:'flex',gap:6,flexShrink:0}}>
                               <button onClick={()=>copy(q)} style={{fontSize:13,background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}>{t('copy')}</button>
                               <button onClick={()=>shareWA(q)} style={{fontSize:13,background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}>{t('whatsapp')}</button>
@@ -155,7 +155,7 @@ export default function SocialPackPage(){
                   {pack.reelsScript&&(
                     <div style={{background:'var(--bg-card)',border:'1px solid var(--border-subtle)',borderRadius:16,padding:20}}>
                       <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>{t('reelsScript')}</div>
-                      <p style={{fontSize:14,color:'var(--ink-700)',lineHeight:1.75,whiteSpace:'pre-line'}}>{pack.reelsScript}</p>
+                      <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.75,whiteSpace:'pre-line'}}>{pack.reelsScript}</p>
                       <button onClick={()=>copy(pack.reelsScript)} style={{fontSize:12,color:'var(--gold-700)',background:'none',border:'none',cursor:'pointer',marginTop:8}}>{t('copyScript')}</button>
                     </div>
                   )}
@@ -169,7 +169,7 @@ export default function SocialPackPage(){
                   {pack.imagePrompt&&(
                     <div style={{background:'var(--ink-100)',borderRadius:16,padding:20}}>
                       <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>{t('imagePrompt')}</div>
-                      <p style={{fontSize:13,color:'var(--ink-600)',lineHeight:1.65,fontStyle:'italic'}}>{pack.imagePrompt}</p>
+                      <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.65,fontStyle:'italic'}}>{pack.imagePrompt}</p>
                     </div>
                   )}
                   <div style={{display:'flex',gap:10}}>

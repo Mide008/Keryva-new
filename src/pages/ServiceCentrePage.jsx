@@ -65,7 +65,7 @@ export default function ServiceCentrePage() {
           {linkedSermon && (
             <div className="card">
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>🙏 Prayer Points</div>
-              {(linkedSermon.content?.prayerPoints || []).map((p, i) => <p key={i} style={{ fontSize: 13.5, color: 'var(--ink-700)', marginBottom: 6 }}>• {p}</p>)}
+              {(linkedSermon.content?.prayerPoints || []).map((p, i) => <p key={i} style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginBottom: 6 }}>• {p}</p>)}
               {!(linkedSermon.content?.prayerPoints?.length) && <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>None saved with this sermon.</p>}
             </div>
           )}
