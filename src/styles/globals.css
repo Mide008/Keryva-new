@@ -138,8 +138,8 @@ input,textarea,select{font-family:var(--font-sans);font-size:15px;color:var(--te
 .verse-card::before{content:'\201C';position:absolute;top:-16px;right:20px;font-family:var(--font-serif);font-size:120px;line-height:1;color:rgba(212,168,75,0.10);pointer-events:none;}
 .verse-card:hover{transform:perspective(800px) rotateX(1deg) translateY(-3px);box-shadow:var(--shadow-gold);}
 .verse-ref{font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-700);margin-bottom:var(--space-3);display:block;}
-.verse-text{font-family:var(--font-serif);font-size:clamp(16px,2.2vw,19px);font-style:italic;line-height:1.8;color:var(--ink-800);margin-bottom:var(--space-4);}
-.verse-note{font-size:13.5px;color:var(--ink-500);line-height:1.6;border-top:1px solid var(--border-subtle);padding-top:var(--space-3);}
+.verse-text{font-family:var(--font-serif);font-size:clamp(16px,2.2vw,19px);font-style:italic;line-height:1.8;color:var(--text-primary);margin-bottom:var(--space-4);}
+.verse-note{font-size:13.5px;color:var(--text-muted);line-height:1.6;border-top:1px solid var(--border-subtle);padding-top:var(--space-3);}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);font-family:var(--font-sans);font-size:14px;font-weight:500;letter-spacing:0.01em;padding:10px 20px;border-radius:var(--radius-md);border:none;cursor:pointer;transition:all var(--dur-fast) ease;white-space:nowrap;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
