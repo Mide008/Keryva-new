@@ -84,7 +84,7 @@ export default function DevotionalPage(){
         <div className="card-gold" style={{ padding:26, display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:12 }}>
           <div>
             <div style={{ fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-700)', marginBottom:8 }}>{t('devotionalTag')}</div>
-            <h1 style={{ fontFamily:'var(--font-serif)', fontSize:'clamp(20px,3vw,28px)', fontWeight:500, color:'var(--ink-900)' }}>
+            <h1 style={{ fontFamily:'var(--font-serif)', fontSize:'clamp(20px,3vw,28px)', fontWeight:500, color:'var(--text-primary)' }}>
               {new Date().toLocaleDateString(({ en:'en-US', fr:'fr-FR', es:'es-ES', pcm:'en-NG', yo:'en-NG', ig:'en-NG' })[lang] || 'en-US',{ weekday:'long', month:'long', day:'numeric' })}
             </h1>
           </div>

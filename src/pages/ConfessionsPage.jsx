@@ -42,7 +42,7 @@ export default function ConfessionsPage(){
       <RevealCard>
         <div className="card-gold" style={{ padding:26 }}>
           <div style={{ fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-700)', marginBottom:8 }}>{t('confessionsTag')}</div>
-          <h1 style={{ fontFamily:'var(--font-serif)', fontSize:'clamp(20px,3vw,28px)', fontWeight:500, color:'var(--ink-900)' }}>{t('confessionsHeadline')}</h1>
+          <h1 style={{ fontFamily:'var(--font-serif)', fontSize:'clamp(20px,3vw,28px)', fontWeight:500, color:'var(--text-primary)' }}>{t('confessionsHeadline')}</h1>
         </div>
       </RevealCard>
 
@@ -99,7 +99,7 @@ export default function ConfessionsPage(){
                       setPendingChapter({bookName:m[1].trim(),chapter:parseInt(m[2],10),verse:parseInt(m[3],10),translation:'KJV'})
                       setActivePage('bible')
                     }}>{d.ref}</span>
-                    <p style={{ fontFamily:'var(--font-serif)', fontSize:17, fontStyle:'italic', color:'var(--ink-800)', lineHeight:1.75, fontWeight:500 }}>"{d.text}"</p>
+                    <p style={{ fontFamily:'var(--font-serif)', fontSize:17, fontStyle:'italic', color:'var(--text-secondary)', lineHeight:1.75, fontWeight:500 }}>"{d.text}"</p>
                   </div>
                 ))}
                 <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
@@ -126,7 +126,7 @@ export default function ConfessionsPage(){
                     <button onClick={async()=>{if(await confirmAction('Delete these declarations?',{tone:'danger',confirmLabel:'Delete'}))deleteConfessions(c.id)}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:'var(--terra-400)' }}>🗑</button>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {c.declarations?.map((d,i)=><p key={i} style={{ fontSize:13, color:'var(--ink-700)', lineHeight:1.6 }}>✦ {d.text}</p>)}
+                    {c.declarations?.map((d,i)=><p key={i} style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.6 }}>✦ {d.text}</p>)}
                   </div>
                 </div>
               ))}
