@@ -121,6 +121,9 @@ input,textarea,select{font-family:var(--font-sans);font-size:15px;color:var(--te
 }
 @supports(padding-bottom:env(safe-area-inset-bottom)){
   .bottom-nav{padding-bottom:calc(env(safe-area-inset-bottom) + 8px);height:calc(var(--bottomnav-h) + env(safe-area-inset-bottom));}
+  @media(max-width:1024px){
+    .page-area{padding-bottom:calc(var(--bottomnav-h) + env(safe-area-inset-bottom) + var(--space-4))!important;}
+  }
 }
 
 /* Cards */
@@ -224,7 +227,7 @@ input,textarea,select{font-family:var(--font-sans);font-size:15px;color:var(--te
 @keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(212,168,75,0.3);}50%{box-shadow:0 0 0 8px rgba(212,168,75,0);}}
 
 /* Toast */
-.toast-container{position:fixed;bottom:calc(var(--bottomnav-h) + var(--space-4));left:50%;transform:translateX(-50%);z-index:var(--z-toast);display:flex;flex-direction:column;align-items:center;gap:var(--space-2);pointer-events:none;}
+.toast-container{position:fixed;bottom:calc(var(--bottomnav-h) + env(safe-area-inset-bottom,0px) + var(--space-4));left:50%;transform:translateX(-50%);z-index:var(--z-toast);display:flex;flex-direction:column;align-items:center;gap:var(--space-2);pointer-events:none;}
 @media(min-width:1025px){.toast-container{bottom:var(--space-6);right:var(--space-6);left:auto;transform:none;}}
 .toast{display:flex;align-items:center;gap:var(--space-3);padding:12px 20px;background:var(--ink-800);color:var(--text-inverse);border-radius:var(--radius-full);font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);pointer-events:all;white-space:nowrap;}
 

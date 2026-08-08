@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
 
+    <!--
+      ⚠️ DO NOT add maximum-scale or user-scalable=no here.
+      Doing so disables native pinch-to-zoom for every user on every page,
+      which is both an accessibility violation (WCAG 1.4.4) and has caused
+      real reported bugs. If text-size needs adjusting, use the in-app
+      Settings text‑size control instead — never restrict browser‑level zoom.
+    -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"

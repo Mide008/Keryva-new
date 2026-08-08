@@ -39,7 +39,7 @@ export default function InstallBanner() {
         initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
         transition={{ type: 'spring', damping: 24, stiffness: 260 }}
         style={{
-          position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--bottomnav-h, 0px) + 16px)',
+          position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--bottomnav-h, 0px) + env(safe-area-inset-bottom, 0px) + 16px)',
           maxWidth: 420, margin: '0 auto', zIndex: 400,
           background: 'var(--ink-900)', color: '#F5F0E6', borderRadius: 18,
           padding: 16, boxShadow: '0 16px 40px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
