@@ -16,7 +16,7 @@ export default function BottomNav() {
   ]
 
   return (
-    <nav className="bottom-nav" aria-label="Mobile navigation">
+    <nav className="bottom-nav" aria-label={t('bottomNav.ariaLabel') || 'Mobile navigation'}>
       {TABS.map(tab => {
         const active = activePage === tab.id
         return (

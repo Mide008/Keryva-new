@@ -78,12 +78,12 @@ export default function AgentPage() {
   const [busy, setBusy] = useState(false)
   const [listening, setListening] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
-  const [resumeOffer, setResumeOffer] = useState(null) // saved memory, offered but not yet restored
+  const [resumeOffer, setResumeOffer] = useState(null)
   const scrollRef = useRef(null)
   const recognitionRef = useRef(null)
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
-  const lastArtifactRef = useRef(null) // { type, args, data } of the most recently generated draft
+  const lastArtifactRef = useRef(null)
 
   const SpeechRecognitionAPI = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
   const hasNativeSpeech = !!SpeechRecognitionAPI
@@ -130,9 +130,9 @@ export default function AgentPage() {
           const res = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: blob })
           const data = await res.json()
           if (data.text) setInput(prev => (prev ? prev + ' ' : '') + data.text)
-          else showToast('Could not transcribe that — please try again or type instead', '⚠️')
+          else showToast(t('agentCouldNotTranscribe'), '⚠️')
         } catch {
-          showToast('Voice transcription unavailable right now — please type instead', '⚠️')
+          showToast(t('agentVoiceUnavailable'), '⚠️')
         }
         setTranscribing(false)
       }
@@ -140,7 +140,7 @@ export default function AgentPage() {
       recorder.start()
       setListening(true)
     } catch {
-      showToast('Microphone access was denied — please type instead', '⚠️')
+      showToast(t('agentMicrophoneDenied'), '⚠️')
     }
   }
 
@@ -151,15 +151,15 @@ export default function AgentPage() {
       const saved = await idbGet('agent_working_memory')
       if (saved?.value?.lastArtifact && saved.value.messages?.length > 1) {
         const ageMs = Date.now() - new Date(saved.value.lastUpdatedAt || 0).getTime()
-        if (ageMs < 30 * 24 * 60 * 60 * 1000) setResumeOffer(saved.value) // only offer if updated within 30 days
+        if (ageMs < 30 * 24 * 60 * 60 * 1000) setResumeOffer(saved.value)
       }
     })()
   }, [])
 
   useEffect(() => {
-    if (messages.length <= 1) return // don't persist the empty default intro
+    if (messages.length <= 1) return
     idbSet('agent_working_memory', {
-      messages: messages.slice(-20), // cap what's persisted — this is working memory, not a full transcript archive
+      messages: messages.slice(-20),
       lastArtifact: lastArtifactRef.current,
       lastUpdatedAt: new Date().toISOString(),
     }).catch(() => {})
@@ -205,16 +205,16 @@ export default function AgentPage() {
       if (routed.action === 'multi_step_plan') {
         const steps = (routed.args?.steps || []).slice(0, 5)
         if (!steps.length) {
-          pushMessage({ role: 'assistant', text: "I couldn't break that into clear steps — could you describe each part you need separately?" })
+          pushMessage({ role: 'assistant', text: t('agentMultiStepUnable') })
           setBusy(false)
           return
         }
-        pushMessage({ role: 'assistant', text: `📋 Plan: ${routed.args.summary || `${steps.length} steps`}` })
+        pushMessage({ role: 'assistant', text: t('agentPlanSummary', { summary: routed.args.summary || t('agentDefaultSteps', { count: steps.length }) }) })
         for (let i = 0; i < steps.length; i++) {
-          pushMessage({ role: 'assistant', text: `Step ${i + 1} of ${steps.length}…` })
+          pushMessage({ role: 'assistant', text: t('agentStepProgress', { current: i + 1, total: steps.length }) })
           await executeAction(steps[i].action, steps[i].args || {})
         }
-        pushMessage({ role: 'assistant', text: `✅ That's the full plan — review each draft above and save whichever you'd like to keep. Nothing has been saved yet.` })
+        pushMessage({ role: 'assistant', text: t('agentPlanComplete') })
         setBusy(false)
         return
       }
@@ -318,8 +318,8 @@ export default function AgentPage() {
 
     if (action === 'edit_current') {
       const current = lastArtifactRef.current
-      if (!current) { pushMessage({ role: 'assistant', text: "I don't have a draft to edit yet — build a sermon, study guide, or Sunday Pack first, then ask me to adjust it." }); return }
-      pushMessage({ role: 'assistant', text: `Updating your ${current.type}…`, pending: true })
+      if (!current) { pushMessage({ role: 'assistant', text: t('agentNoDraftToEdit') }); return }
+      pushMessage({ role: 'assistant', text: t('agentUpdatingDraft', { type: current.type }), pending: true })
       const editPrompt = `Here is a ${current.type} as JSON:
 ${JSON.stringify(current.data)}
 
@@ -329,7 +329,7 @@ Return ONLY the complete updated JSON in the exact same shape as the input — n
       const raw = await ask(editPrompt, 'longform')
       setMessages(prev => prev.filter(m => !m.pending))
       const updated = parseJSON(raw)
-      if (!updated) { pushMessage({ role: 'assistant', text: "I couldn't apply that edit cleanly — want me to try again, or describe it differently?" }); return }
+      if (!updated) { pushMessage({ role: 'assistant', text: t('agentEditFailed') }); return }
       const kindMap = { sermon: 'sermon-draft', 'study guide': 'study-guide', 'Sunday Pack': 'sunday-pack' }
       pushMessage({ role: 'assistant', kind: kindMap[current.type], data: updated })
       lastArtifactRef.current = { ...current, data: updated }
@@ -341,22 +341,22 @@ Return ONLY the complete updated JSON in the exact same shape as the input — n
     const ok = await confirmAction(t('agentSaveSermonConfirm'), { confirmLabel: t('save') })
     if (!ok) return
     saveSermon(sermon)
-    showToast('Sermon saved', '🎙')
+    showToast(t('agentSermonSavedToast'), '🎙')
     pushMessage({ role: 'assistant', text: t('agentSermonSaved') })
-    pushMessage({ role: 'assistant', kind: 'chain-suggest', data: { label: '📚 Turn this into a Study Guide', action: 'create_study_guide', args: { topic: sermon.title || sermon.theme || '', scripture: sermon.mainText || '' } } })
+    pushMessage({ role: 'assistant', kind: 'chain-suggest', data: { label: t('agentChainStudyGuide'), action: 'create_study_guide', args: { topic: sermon.title || sermon.theme || '', scripture: sermon.mainText || '' } } })
   }
   const handleSaveStudy = async (guide) => {
     const ok = await confirmAction(t('agentSaveStudyConfirm'), { confirmLabel: t('save') })
     if (!ok) return
     saveStudyGuide(guide)
-    showToast('Study guide saved', '📚')
+    showToast(t('agentStudySavedToast'), '📚')
     pushMessage({ role: 'assistant', text: t('agentStudySaved') })
   }
   const handleSaveSunday = async (pack) => {
     const ok = await confirmAction(t('agentSaveSundayConfirm'), { confirmLabel: t('save') })
     if (!ok) return
     saveSundayPack(pack)
-    showToast('Sunday Pack saved', '📋')
+    showToast(t('agentSundaySavedToast'), '📋')
     pushMessage({ role: 'assistant', text: t('agentSundaySaved') })
   }
 
@@ -373,11 +373,14 @@ Return ONLY the complete updated JSON in the exact same shape as the input — n
       {resumeOffer && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: 'var(--gold-50)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 14px', marginBottom: 14 }}>
           <span style={{ fontSize: 13, color: 'var(--gold-800)' }}>
-            You still have a {resumeOffer.lastArtifact?.type} in progress on "{resumeOffer.lastArtifact?.args?.topic || resumeOffer.lastArtifact?.args?.instruction || 'your last session'}".
+            {t('agentResumeOffer', {
+              type: resumeOffer.lastArtifact?.type || t('agentDraft'),
+              topic: resumeOffer.lastArtifact?.args?.topic || resumeOffer.lastArtifact?.args?.instruction || t('agentLastSession')
+            })}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={resumeDraft} className="btn btn-gold btn-sm">Continue it</button>
-            <button onClick={dismissResume} className="btn btn-ghost btn-sm">Start fresh</button>
+            <button onClick={resumeDraft} className="btn btn-gold btn-sm">{t('agentContinueDraft')}</button>
+            <button onClick={dismissResume} className="btn btn-ghost btn-sm">{t('agentStartFresh')}</button>
           </div>
         </div>
       )}
@@ -390,7 +393,7 @@ Return ONLY the complete updated JSON in the exact same shape as the input — n
             onAddToPrayer={(ref, text) => { setPendingVerse({ ref, translation: user.translation || 'KJV', text }); setActivePage('prayer') }}
             onGoToBible={(ref) => {
               const m2 = ref?.match(/^(.+?)\s+(\d+):(\d+)/)
-              if (!m2) { showToast('Could not open this reference', '⚠️'); return }
+              if (!m2) { showToast(t('agentCannotOpenRef'), '⚠️'); return }
               setPendingChapter({ bookName: m2[1].trim(), chapter: parseInt(m2[2],10), verse: parseInt(m2[3],10), translation: user.translation || 'KJV' })
               setActivePage('bible')
             }}
@@ -416,7 +419,7 @@ Return ONLY the complete updated JSON in the exact same shape as the input — n
         {voiceSupported && (
           <button type="button" onClick={toggleListening} className="btn btn-outline" disabled={busy || transcribing}
             style={{ color: listening ? 'var(--terra-500)' : undefined, borderColor: listening ? 'var(--terra-400)' : undefined }}
-            title={listening ? 'Stop listening' : transcribing ? 'Transcribing…' : 'Speak instead of typing'}>
+            title={listening ? t('agentStopListening') : transcribing ? t('agentTranscribing') : t('agentSpeakInstead')}>
             {transcribing ? <span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span> : listening ? '⏺' : '🎙'}
           </button>
         )}
@@ -427,6 +430,7 @@ Return ONLY the complete updated JSON in the exact same shape as the input — n
 }
 
 function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSermon, onAddToPrayer, onGoToBible, onChainAction }) {
+  const { t } = useTranslation()
   const isUser = m.role === 'user'
   const bubbleStyle = {
     maxWidth: '88%', alignSelf: isUser ? 'flex-end' : 'flex-start',
@@ -468,9 +472,9 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
             {v.verified && <p style={{ fontStyle: 'italic', fontSize: 13.5 }}>{v.text}</p>}
             {v.reason && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v.reason}</p>}
             <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-              {v.verified && <button onClick={() => onGoToBible(v.reference)} className="btn btn-outline btn-sm" style={{ fontSize: 11.5, padding: '4px 10px' }}>📍 Bible</button>}
-              <button onClick={() => onAddToSermon(v.reference, v.text || '')} className="btn btn-outline btn-sm" style={{ fontSize: 11.5, padding: '4px 10px' }}>🎙 Sermon</button>
-              <button onClick={() => onAddToPrayer(v.reference, v.text || '')} className="btn btn-outline btn-sm" style={{ fontSize: 11.5, padding: '4px 10px' }}>🙏 Prayer</button>
+              {v.verified && <button onClick={() => onGoToBible(v.reference)} className="btn btn-outline btn-sm" style={{ fontSize: 11.5, padding: '4px 10px' }}>{t('agentGoToBible')}</button>}
+              <button onClick={() => onAddToSermon(v.reference, v.text || '')} className="btn btn-outline btn-sm" style={{ fontSize: 11.5, padding: '4px 10px' }}>🎙 {t('sermon')}</button>
+              <button onClick={() => onAddToPrayer(v.reference, v.text || '')} className="btn btn-outline btn-sm" style={{ fontSize: 11.5, padding: '4px 10px' }}>🙏 {t('prayer')}</button>
             </div>
           </div>
         ))}
@@ -492,7 +496,7 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
             {p.scripture && <p style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-muted)' }}>{p.scripture}</p>}
           </div>
         ))}
-        <button onClick={() => onSaveSermon(s)} className="btn btn-gold btn-sm" style={{ marginTop: 6 }}>🔖 Save to Sermon Studio</button>
+        <button onClick={() => onSaveSermon(s)} className="btn btn-gold btn-sm" style={{ marginTop: 6 }}>🔖 {t('saveSermon')}</button>
       </motion.div>
     )
   }
@@ -505,7 +509,7 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
         <p style={{ fontSize: 13 }}>{g.mainScripture}</p>
         <p style={{ fontSize: 13, marginTop: 6 }}>{g.backgroundContext}</p>
         {(g.discussionQuestions || []).map((q, i) => <p key={i} style={{ fontSize: 13 }}>• {q}</p>)}
-        <button onClick={() => onSaveStudy(g)} className="btn btn-gold btn-sm" style={{ marginTop: 8 }}>🔖 Save to Study Guides</button>
+        <button onClick={() => onSaveStudy(g)} className="btn btn-gold btn-sm" style={{ marginTop: 8 }}>🔖 {t('saveStudyGuide')}</button>
       </motion.div>
     )
   }
@@ -517,7 +521,7 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
         <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{p.bulletin}</p>
         {(p.prayerPoints || []).map((pt, i) => <p key={i} style={{ fontSize: 13 }}>🙏 {pt}</p>)}
         {p.whatsappMessage && <p style={{ fontSize: 12, background: 'var(--gold-50)', padding: 8, borderRadius: 8, marginTop: 6 }}>{p.whatsappMessage}</p>}
-        <button onClick={() => onSaveSunday(p)} className="btn btn-gold btn-sm" style={{ marginTop: 8 }}>🔖 Save to Sunday Packs</button>
+        <button onClick={() => onSaveSunday(p)} className="btn btn-gold btn-sm" style={{ marginTop: 8 }}>🔖 {t('saveSundayPack')}</button>
       </motion.div>
     )
   }
@@ -526,7 +530,7 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={bubbleStyle}>
       {m.text}
       {!isUser && typeof window !== 'undefined' && window.speechSynthesis && (
-        <button onClick={() => speak(m.text)} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', padding: 0 }} title="Listen">🔊 Listen</button>
+        <button onClick={() => speak(m.text)} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', padding: 0 }} title={t('agentListen')}>🔊 {t('agentListen')}</button>
       )}
     </motion.div>
   )
@@ -534,7 +538,7 @@ function MessageBubble({ m, onSaveSermon, onSaveStudy, onSaveSunday, onAddToSerm
 
 function speak(text) {
   if (!text || typeof window === 'undefined' || !window.speechSynthesis) return
-  window.speechSynthesis.cancel() // stop anything already playing
+  window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.rate = 0.95
   window.speechSynthesis.speak(utterance)

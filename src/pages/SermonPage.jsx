@@ -1,3 +1,4 @@
+// src/pages/SermonPage.jsx
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Icon3D from '@/components/ui/Icon3D'
@@ -13,18 +14,59 @@ import { RevealCard, MagneticBtn, MotionHeadline } from '@/components/ui/MotionC
 import { tryConsume } from '@/lib/usageLimits'
 import UsageBadge from '@/components/ui/UsageBadge'
 
-const AUD=['General congregation','Youth service','Leaders & ministers',"Women's meeting",'Evangelistic / outreach','Children / Sunday school','New believers','Funeral service','Wedding service','Bible study']
-const DEN=['Pentecostal / Charismatic','Anglican / Episcopal','Baptist','Catholic-friendly','Evangelical','Teaching','Prophetic','Youth-friendly']
-const LEN=['10-minute message','20-minute message','30-minute message','45-minute sermon','60-minute sermon']
-const TONE=['Teaching','Inspirational','Evangelistic','Pastoral','Revival']
+// Options with labelKey for translation
+const AUD = [
+  { value: 'General congregation', labelKey: 'sermon.audience_general' },
+  { value: 'Youth service', labelKey: 'sermon.audience_youth' },
+  { value: 'Leaders & ministers', labelKey: 'sermon.audience_leaders' },
+  { value: "Women's meeting", labelKey: 'sermon.audience_women' },
+  { value: 'Evangelistic / outreach', labelKey: 'sermon.audience_evangelistic' },
+  { value: 'Children / Sunday school', labelKey: 'sermon.audience_children' },
+  { value: 'New believers', labelKey: 'sermon.audience_new_believers' },
+  { value: 'Funeral service', labelKey: 'sermon.audience_funeral' },
+  { value: 'Wedding service', labelKey: 'sermon.audience_wedding' },
+  { value: 'Bible study', labelKey: 'sermon.audience_bible_study' },
+]
+const DEN = [
+  { value: 'Pentecostal / Charismatic', labelKey: 'sermon.denomination_pentecostal' },
+  { value: 'Anglican / Episcopal', labelKey: 'sermon.denomination_anglican' },
+  { value: 'Baptist', labelKey: 'sermon.denomination_baptist' },
+  { value: 'Catholic-friendly', labelKey: 'sermon.denomination_catholic' },
+  { value: 'Evangelical', labelKey: 'sermon.denomination_evangelical' },
+  { value: 'Teaching', labelKey: 'sermon.denomination_teaching' },
+  { value: 'Prophetic', labelKey: 'sermon.denomination_prophetic' },
+  { value: 'Youth-friendly', labelKey: 'sermon.denomination_youth' },
+]
+const LEN = [
+  { value: '10-minute message', labelKey: 'sermon.length_10min' },
+  { value: '20-minute message', labelKey: 'sermon.length_20min' },
+  { value: '30-minute message', labelKey: 'sermon.length_30min' },
+  { value: '45-minute sermon', labelKey: 'sermon.length_45min' },
+  { value: '60-minute sermon', labelKey: 'sermon.length_60min' },
+]
+const TONE = [
+  { value: 'Teaching', labelKey: 'sermon.tone_teaching' },
+  { value: 'Inspirational', labelKey: 'sermon.tone_inspirational' },
+  { value: 'Evangelistic', labelKey: 'sermon.tone_evangelistic' },
+  { value: 'Pastoral', labelKey: 'sermon.tone_pastoral' },
+  { value: 'Revival', labelKey: 'sermon.tone_revival' },
+]
 
-function copyText(t, showToast) { navigator.clipboard.writeText(t).catch(()=>{}); showToast(showToast, '📋') }
-function shareWA(t, showToast) { window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,'_blank'); showToast(showToast, '💬') }
+function copyText(txt, showToast) { navigator.clipboard.writeText(txt).catch(()=>{}); showToast(t('copiedToast'), '📋') }
+function shareWA(txt, showToast) { window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank'); showToast(t('shareToWhatsApp'), '💬') }
 
 export default function SermonPage() {
   const { t } = useTranslation()
   const [tab, setTab] = useState('build')
-  const [form, setForm] = useState({ topic:'', scripture:'', audience:'General congregation', denomination:'Pentecostal / Charismatic', length:'45-minute sermon', tone:'Inspirational', translation:'KJV' })
+  const [form, setForm] = useState({
+    topic:'',
+    scripture:'',
+    audience:'General congregation',
+    denomination:'Pentecostal / Charismatic',
+    length:'45-minute sermon',
+    tone:'Inspirational',
+    translation:'KJV'
+  })
   const [sermon, setSermon] = useState(null)
   const [currentSermonId, setCurrentSermonId] = useState(null)
   const [review, setReview] = useState(null)
@@ -44,7 +86,7 @@ export default function SermonPage() {
     if (!pendingVerse) return
     setForm(f => ({ ...f, scripture: `${pendingVerse.ref} — ${pendingVerse.text}` }))
     setPendingVerse(null)
-    showToast(`${pendingVerse.ref} added to Sermon Studio`, '📎')
+    showToast(t('sermon.verseAdded', { ref: pendingVerse.ref }), '📎')
   }, [pendingVerse])
 
   useEffect(() => {
@@ -66,7 +108,7 @@ export default function SermonPage() {
   const generate = async () => {
     if (!form.topic.trim()) { showToast(t('enterTopic'), '⚠️'); return }
     const gate = tryConsume('sermon')
-    if (!gate.allowed) { showToast("You've reached today's free sermon limit. Come back tomorrow, or your saved sermons remain fully available.", '⏳'); return }
+    if (!gate.allowed) { showToast(t('sermon.limitReached'), '⏳'); return }
     setSermon(null)
     setCurrentSermonId(null)
     const r = await ai.generateSermon({ ...form, languageLabel: languageLabelFor(user.language) })
@@ -117,10 +159,10 @@ export default function SermonPage() {
     const parsed = await ai.reviewSermon(sermon, form.length)
     setReviewing(false)
     if (parsed) setReview(parsed)
-    else showToast('Could not review this right now — please try again', '❌')
+    else showToast(t('sermon.couldNotReview'), '❌')
   }
 
-  const fullText = () => sermon ? `${sermon.title}\n\nTheme: ${sermon.theme}\nScripture: ${sermon.mainText}\n\nINTRODUCTION\n${sermon.introduction}\n\n${sermon.points?.map((p,i)=>`POINT ${i+1}: ${p.title}\n${p.content}\n${p.scripture}`).join('\n\n')}\n\nAPPLICATION\n${sermon.application}\n\nALTAR CALL\n${sermon.altarCall}\n\nCLOSING PRAYER\n${sermon.closingPrayer}\n\nKeryva · OmniCraft Studios` : ''
+  const fullText = () => sermon ? `${sermon.title}\n\n${t('theme')}: ${sermon.theme}\n${t('mainText')}: ${sermon.mainText}\n\n${t('introduction')}\n${sermon.introduction}\n\n${sermon.points?.map((p,i)=>`${t('point')} ${i+1}: ${p.title}\n${p.content}\n${p.scripture}`).join('\n\n')}\n\n${t('application')}\n${sermon.application}\n\n${t('altarCall')}\n${sermon.altarCall}\n\n${t('closingPrayer')}\n${sermon.closingPrayer}\n\nKeryva · OmniCraft Studios` : ''
 
   const downloadPDF = () => {
     if (!sermon) return
@@ -135,16 +177,16 @@ export default function SermonPage() {
         @media print{body{margin:0;padding:20px}}
       </style></head><body>
       <h1>${sermon.title}</h1>
-      <div class="meta">Theme: ${sermon.theme||''} &nbsp;·&nbsp; Scripture: ${sermon.mainText||''}</div>
-      <h2>Introduction</h2><p>${(sermon.introduction||'').replace(/\n/g,'<br/>')}</p>
-      ${(sermon.points||[]).map((p,i)=>`<h2>Point ${i+1}: ${p.title}</h2><p>${(p.content||'').replace(/\n/g,'<br/>')}</p><p><em>${p.scripture||''}</em></p>`).join('')}
-      <h2>Application</h2><p>${(sermon.application||'').replace(/\n/g,'<br/>')}</p>
-      <h2>Altar Call</h2><p>${(sermon.altarCall||'').replace(/\n/g,'<br/>')}</p>
-      <h2>Closing Prayer</h2><p>${(sermon.closingPrayer||'').replace(/\n/g,'<br/>')}</p>
-      <div class="footer">Please verify all scripture before preaching. Keryva · OmniCraft Studios</div>
+      <div class="meta">${t('theme')}: ${sermon.theme||''} &nbsp;·&nbsp; ${t('mainText')}: ${sermon.mainText||''}</div>
+      <h2>${t('introduction')}</h2><p>${(sermon.introduction||'').replace(/\n/g,'<br/>')}</p>
+      ${(sermon.points||[]).map((p,i)=>`<h2>${t('point')} ${i+1}: ${p.title}</h2><p>${(p.content||'').replace(/\n/g,'<br/>')}</p><p><em>${p.scripture||''}</em></p>`).join('')}
+      <h2>${t('application')}</h2><p>${(sermon.application||'').replace(/\n/g,'<br/>')}</p>
+      <h2>${t('altarCall')}</h2><p>${(sermon.altarCall||'').replace(/\n/g,'<br/>')}</p>
+      <h2>${t('closingPrayer')}</h2><p>${(sermon.closingPrayer||'').replace(/\n/g,'<br/>')}</p>
+      <div class="footer">${t('sermon.pdfFooter')}</div>
       </body></html>`
     const win = window.open('', '_blank')
-    if (!win) { showToast('Please allow pop-ups to download as PDF', '⚠️'); return }
+    if (!win) { showToast(t('sermon.allowPopups'), '⚠️'); return }
     win.document.write(html)
     win.document.close()
     win.focus()
@@ -204,7 +246,9 @@ export default function SermonPage() {
                 ].map(([label,opts,key])=>(
                   <div key={key} className="input-group">
                     <label className="input-label">{label}</label>
-                    <select className="select-field" value={form[key]} onChange={e=>upd(key,e.target.value)}>{opts.map(o=><option key={o}>{o}</option>)}</select>
+                    <select className="select-field" value={form[key]} onChange={e=>upd(key,e.target.value)}>
+                      {opts.map(o => <option key={o.value} value={o.value}>{t(o.labelKey)}</option>)}
+                    </select>
                   </div>
                 ))}
               </div>
@@ -233,7 +277,7 @@ export default function SermonPage() {
               <EmptyState icon="🎙" headline={t('noSermonYet')} body={t('goToBuild')} ctaLabel={t('buildSermon')} onCta={()=>setTab('build')}/>
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                <div className="ai-disclaimer" role="note"><span>⚠️</span><span>{t('aiDisclaimer')}</span></div>
+                <div className="ai-disclaimer" role="note"><span>⚠️</span><span>{t('disclaimer')}</span></div>
 
                 {/* Quick actions */}
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -245,7 +289,7 @@ export default function SermonPage() {
                     [t('youthVersionAction'), makeYouth, 'btn-outline'],
                     [t('preachingNotesAction'), getPreachNotes, 'btn-outline'],
                     [t('preachModeAction'), ()=>setPreachMode(true), 'btn-outline'],
-                    ['📄 Download PDF', downloadPDF, 'btn-outline'],
+                    [t('sermon.downloadPDF'), downloadPDF, 'btn-outline'],
                   ].map(([label,action,cls])=>(
                     <button key={label} onClick={action} disabled={improving!=null} className={`btn ${cls} btn-sm`} style={{gap:5}}>{label}</button>
                   ))}
@@ -303,30 +347,32 @@ export default function SermonPage() {
                 </div>
 
                 {currentSermonId && (sermons.find(s=>s.id===currentSermonId)?.versions?.length > 0) && (
-                  <SectionBox title="↺ Version History">
+                  <SectionBox title={t('sermon.versionHistory')}>
                     <div style={{display:'flex',flexDirection:'column',gap:8}}>
                       {sermons.find(s=>s.id===currentSermonId).versions.map((v,i)=>(
                         <div key={v.versionedAt} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:10,background:'var(--bg-primary)'}}>
-                          <span style={{fontSize:12.5,color:'var(--text-muted)'}}>{i===0?'Previous version':`${i+1} versions ago`} · {new Date(v.versionedAt).toLocaleString()}</span>
-                          <button onClick={async()=>{ if(await confirmAction('Restore this version? Your current edits will be kept as a version too.',{confirmLabel:'Restore'})){ restoreSermonVersion(currentSermonId, v.versionedAt); setSermon(v.content) } }} className="btn btn-outline btn-sm">Restore</button>
+                          <span style={{fontSize:12.5,color:'var(--text-muted)'}}>
+                            {i===0 ? t('sermon.previousVersion') : t('sermon.versionAgo', { count: i+1 })} · {new Date(v.versionedAt).toLocaleString()}
+                          </span>
+                          <button onClick={async()=>{ if(await confirmAction(t('sermon.restoreConfirm'),{confirmLabel:t('sermon.restore')})){ restoreSermonVersion(currentSermonId, v.versionedAt); setSermon(v.content) } }} className="btn btn-outline btn-sm">{t('sermon.restore')}</button>
                         </div>
                       ))}
                     </div>
                   </SectionBox>
                 )}
 
-                <SectionBox title="🔍 Sermon Review">
-                  <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:10,lineHeight:1.6}}>A quick structural check — scripture references worth double-checking, repetition, pacing. Not a verdict on doctrine; that's yours to judge.</p>
+                <SectionBox title={t('sermon.reviewTitle')}>
+                  <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:10,lineHeight:1.6}}>{t('sermon.reviewDesc')}</p>
                   <button onClick={runReview} disabled={reviewing} className="btn btn-outline btn-sm" style={{marginBottom:review?12:0}}>
-                    {reviewing?<><span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span> Reviewing…</>:'Run review'}
+                    {reviewing?<><span className="loading-dots"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span> {t('sermon.reviewing')}</>: t('sermon.runReview')}
                   </button>
                   {review && (
                     <div style={{display:'flex',flexDirection:'column',gap:10}}>
                       <p style={{fontSize:13.5,fontStyle:'italic',color:'var(--text-secondary)'}}>{review.summary}</p>
-                      {review.estimatedMinutes!=null && <p style={{fontSize:12.5,color:'var(--text-muted)'}}>Estimated length: ~{review.estimatedMinutes} min</p>}
+                      {review.estimatedMinutes!=null && <p style={{fontSize:12.5,color:'var(--text-muted)'}}>{t('sermon.estimatedLength', { minutes: review.estimatedMinutes })}</p>}
                       {review.concerns?.length>0 && (
                         <div>
-                          <div style={{fontSize:11,fontWeight:500,color:'var(--terra-500)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Worth a look</div>
+                          <div style={{fontSize:11,fontWeight:500,color:'var(--terra-500)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t('sermon.worthALook')}</div>
                           {review.concerns.map((c,i)=>(
                             <div key={i} style={{display:'flex',gap:8,padding:'6px 0',borderBottom:i<review.concerns.length-1?'1px solid var(--border-subtle)':'none'}}>
                               <span className="tag tag-ink" style={{fontSize:10,flexShrink:0,alignSelf:'flex-start'}}>{c.area}</span>
@@ -335,10 +381,10 @@ export default function SermonPage() {
                           ))}
                         </div>
                       )}
-                      {review.concerns?.length===0 && <p style={{fontSize:13,color:'var(--sage-600)'}}>No structural concerns flagged — still worth your own read-through before preaching.</p>}
+                      {review.concerns?.length===0 && <p style={{fontSize:13,color:'var(--sage-600)'}}>{t('sermon.noConcerns')}</p>}
                       {review.strengths?.length>0 && (
                         <div>
-                          <div style={{fontSize:11,fontWeight:500,color:'var(--sage-600)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Working well</div>
+                          <div style={{fontSize:11,fontWeight:500,color:'var(--sage-600)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t('sermon.workingWell')}</div>
                           {review.strengths.map((s,i)=><p key={i} style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.6}}>• {s}</p>)}
                         </div>
                       )}
@@ -373,7 +419,7 @@ export default function SermonPage() {
                       </div>
                       <div style={{display:'flex',gap:6}}>
                         <button onClick={()=>{setSermon(s.content);setCurrentSermonId(s.id);setForm({topic:s.topic,scripture:s.content?.mainText||'',audience:s.audience||'General congregation',denomination:s.denomination||'Pentecostal / Charismatic',length:s.length||'45-minute sermon',tone:s.tone||'Inspirational',translation:s.translation||'KJV'});setTab('edit')}} className="btn btn-gold btn-sm">{t('openSermon')}</button>
-                        <button onClick={async()=>{if(await confirmAction('Delete this sermon?',{tone:'danger',confirmLabel:'Delete',detail:'This cannot be undone.'})){deleteSermon(s.id); showToast(t('removed'), '🗑')}}} className="btn btn-outline btn-sm" style={{color:'var(--terra-500)'}}>🗑</button>
+                        <button onClick={async()=>{if(await confirmAction(t('deleteConfirm'),{tone:'danger',confirmLabel:t('delete'),detail:t('cannotBeUndone')})){deleteSermon(s.id); showToast(t('removed'), '🗑')}}} className="btn btn-outline btn-sm" style={{color:'var(--terra-500)'}}>🗑</button>
                       </div>
                     </div>
                   </motion.div>
@@ -395,10 +441,10 @@ export default function SermonPage() {
               <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
                 <div style={{fontSize:20,fontWeight:600,fontVariantNumeric:'tabular-nums',color:'var(--gold-700)'}}>{`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`}</div>
                 <button onClick={()=>setTimerOn(v=>!v)} className="btn btn-outline btn-sm">{timerOn?'⏸':'▶'}</button>
-                <button onClick={()=>setPulpitScale(s=>Math.max(0.8,s-0.1))} className="btn btn-outline btn-sm" title="Smaller text">A−</button>
-                <button onClick={()=>setPulpitScale(s=>Math.min(1.8,s+0.1))} className="btn btn-outline btn-sm" title="Larger text — pulpit mode">A+</button>
-                <button onClick={()=>setTeleprompterOn(v=>!v)} className="btn btn-outline btn-sm" style={{color:teleprompterOn?'var(--terra-500)':undefined}} title="Auto-scroll like a teleprompter">📜 {teleprompterOn?'Scrolling':'Teleprompter'}</button>
-                <button onClick={()=>window.print()} className="btn btn-outline btn-sm" title="Print-ready sermon">🖨 Print</button>
+                <button onClick={()=>setPulpitScale(s=>Math.max(0.8,s-0.1))} className="btn btn-outline btn-sm" title={t('sermon.smallerText')}>A−</button>
+                <button onClick={()=>setPulpitScale(s=>Math.min(1.8,s+0.1))} className="btn btn-outline btn-sm" title={t('sermon.largerText')}>A+</button>
+                <button onClick={()=>setTeleprompterOn(v=>!v)} className="btn btn-outline btn-sm" style={{color:teleprompterOn?'var(--terra-500)':undefined}} title={t('sermon.teleprompter')}>📜 {teleprompterOn ? t('sermon.scrolling') : t('sermon.teleprompter')}</button>
+                <button onClick={()=>window.print()} className="btn btn-outline btn-sm" title={t('sermon.printReady')}>🖨 {t('sermon.print')}</button>
                 <button onClick={()=>{setPreachMode(false);setTimerOn(false);setElapsed(0);setTeleprompterOn(false)}} className="btn btn-outline btn-sm">✕ {t('preachModeExit')}</button>
               </div>
             </div>

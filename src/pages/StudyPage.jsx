@@ -1,3 +1,4 @@
+// src/pages/StudyPage.jsx
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Icon3D from '@/components/ui/Icon3D'
@@ -10,10 +11,46 @@ import { LoadingPulse } from '@/components/ui/Loading'
 import EmptyState from '@/components/ui/EmptyState'
 import { RevealCard, MagneticBtn, MotionHeadline } from '@/components/ui/MotionComponents'
 
-const GROUP_TYPES=['Youth (13-25)','Adults','New believers','Workers/Professionals','Leaders','Mixed congregation','Children','Senior adults']
-const LENGTHS=['30 minutes','45 minutes','60 minutes','90 minutes']
-const TONES=['Simple & accessible','Deep & theological','Conversational','Teaching style','Reflective']
-const THEMES=['Forgiveness','Faith','Prayer','Identity in Christ','Grace','Suffering & Hope','The Holy Spirit','Generosity','Worship','Discipleship','Love','Evangelism','Marriage & Family','Purpose']
+// Options with labelKey for translation
+const GROUP_TYPES = [
+  { value: 'Youth (13-25)', labelKey: 'study.groupYouth' },
+  { value: 'Adults', labelKey: 'study.groupAdults' },
+  { value: 'New believers', labelKey: 'study.groupNewBelievers' },
+  { value: 'Workers/Professionals', labelKey: 'study.groupWorkers' },
+  { value: 'Leaders', labelKey: 'study.groupLeaders' },
+  { value: 'Mixed congregation', labelKey: 'study.groupMixed' },
+  { value: 'Children', labelKey: 'study.groupChildren' },
+  { value: 'Senior adults', labelKey: 'study.groupSeniorAdults' },
+]
+const LENGTHS = [
+  { value: '30 minutes', labelKey: 'study.length30' },
+  { value: '45 minutes', labelKey: 'study.length45' },
+  { value: '60 minutes', labelKey: 'study.length60' },
+  { value: '90 minutes', labelKey: 'study.length90' },
+]
+const TONES = [
+  { value: 'Simple & accessible', labelKey: 'study.toneSimple' },
+  { value: 'Deep & theological', labelKey: 'study.toneDeep' },
+  { value: 'Conversational', labelKey: 'study.toneConversational' },
+  { value: 'Teaching style', labelKey: 'study.toneTeaching' },
+  { value: 'Reflective', labelKey: 'study.toneReflective' },
+]
+const THEMES = [
+  { key: 'forgiveness', labelKey: 'study.themeForgiveness' },
+  { key: 'faith', labelKey: 'study.themeFaith' },
+  { key: 'prayer', labelKey: 'study.themePrayer' },
+  { key: 'identity', labelKey: 'study.themeIdentity' },
+  { key: 'grace', labelKey: 'study.themeGrace' },
+  { key: 'suffering', labelKey: 'study.themeSuffering' },
+  { key: 'holyspirit', labelKey: 'study.themeHolySpirit' },
+  { key: 'generosity', labelKey: 'study.themeGenerosity' },
+  { key: 'worship', labelKey: 'study.themeWorship' },
+  { key: 'discipleship', labelKey: 'study.themeDiscipleship' },
+  { key: 'love', labelKey: 'study.themeLove' },
+  { key: 'evangelism', labelKey: 'study.themeEvangelism' },
+  { key: 'marriage', labelKey: 'study.themeMarriage' },
+  { key: 'purpose', labelKey: 'study.themePurpose' },
+]
 
 function parseJSON(raw) {
   try { const c=raw.replace(/```json|```/g,'').trim(); return JSON.parse(c) }
@@ -42,7 +79,7 @@ export default function StudyPage() {
     setTopic(prev => prev || pendingVerse.ref)
     setTab('Build')
     setPendingVerse(null)
-    showToast(`${pendingVerse.ref} added to Study Guide`, '📎')
+    showToast(t('study.verseAdded', { ref: pendingVerse.ref }), '📎')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingVerse])
 
@@ -55,19 +92,19 @@ export default function StudyPage() {
       const j = parseJSON(raw)
       if (j) {
         setGuide(j)
-        showToast('Your study guide is ready','✓')
+        showToast(t('study.guideReady'),'✓')
         setTimeout(()=>resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),100)
       } else {
         showToast(t('errorParsing'),'❌')
       }
     } else {
-      showToast(error || t('aiRequestFailed'), '❌')
+      showToast(error || t('requestFailed'), '❌')
     }
   }
 
   const share = () => {
     if (!guide) return
-    const txt = `📚 *${guide.title}*\n\n🎯 ${guide.objective}\n\n📖 ${guide.mainScripture}\n\n💬 Discussion:\n${guide.discussionQuestions?.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\n✅ Challenge: ${guide.weeklyChallenge}\n\n— Keryva · OmniCraft Studios`
+    const txt = `📚 *${guide.title || t('study.untitled')}*\n\n🎯 ${t('study.shareObjective')}: ${guide.objective}\n\n📖 ${guide.mainScripture}\n\n💬 ${t('study.shareDiscussion')}:\n${guide.discussionQuestions?.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\n✅ ${t('study.shareChallenge')}: ${guide.weeklyChallenge}\n\n— Keryva · OmniCraft Studios`
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank')
     showToast(t('shareToWhatsApp'),'💬')
   }
@@ -95,8 +132,8 @@ export default function StudyPage() {
     </div>
   )
 
-  const buildLabel = t('buildTab') || 'Build'
-  const libraryLabel = t('libraryTab') || 'Library'
+  const buildLabel = t('buildTab')
+  const libraryLabel = t('libraryTab')
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:24}}>
@@ -115,7 +152,11 @@ export default function StudyPage() {
         {['Build','Library'].map(tabKey=>{
           const label = tabKey === 'Build' ? buildLabel : libraryLabel
           return (
-            <button key={tabKey} onClick={()=>setTab(tabKey)} style={{padding:'7px 22px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',background:tab===tabKey?'var(--ink-900)':'transparent',color:tab===tabKey?'var(--text-inverse)':'var(--text-muted)',border:'none',transition:'all var(--dur-fast) ease'}}>
+            <button key={tabKey} onClick={()=>setTab(tabKey)}
+              style={{padding:'7px 22px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',
+                background:tab===tabKey?'var(--ink-900)':'transparent',
+                color:tab===tabKey?'var(--text-inverse)':'var(--text-muted)',
+                border:'none',transition:'all var(--dur-fast) ease'}}>
               {label}{tabKey==='Library'&&studyGuides.length>0&&<span style={{marginLeft:6,background:'var(--gold-500)',color:'var(--ink-900)',borderRadius:10,padding:'1px 6px',fontSize:10}}>{studyGuides.length}</span>}
             </button>
           )
@@ -127,22 +168,40 @@ export default function StudyPage() {
           <motion.div key="build" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} style={{display:'flex',flexDirection:'column',gap:16}}>
             <div className="input-group">
               <label className="input-label">{t('studyTopicLabel')}</label>
-              <input className="input-field" style={{fontSize:16}} placeholder="e.g. Forgiveness, John 15, Walking in the Spirit…" value={topic} onChange={e=>setTopic(e.target.value)}/>
+              <input className="input-field" style={{fontSize:16}} placeholder={t('study.topicPlaceholder')} value={topic} onChange={e=>setTopic(e.target.value)}/>
             </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
-              {THEMES.map(th=><button key={th} onClick={()=>setTopic(th)} className={`tag ${topic===th?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 12px',fontSize:12}}>{th}</button>)}
+              {THEMES.map(th => (
+                <button key={th.key} onClick={() => setTopic(t(th.labelKey))}
+                  className={`tag ${topic === t(th.labelKey) ? 'tag-dark' : 'tag-ink'}`}
+                  style={{cursor:'pointer',padding:'5px 12px',fontSize:12}}>
+                  {t(th.labelKey)}
+                </button>
+              ))}
             </div>
             <div className="input-group">
               <label className="input-label">{t('studyPassageLabel')}</label>
-              <input className="input-field" placeholder="e.g. Matthew 18:21-35" value={passage} onChange={e=>setPassage(e.target.value)}/>
+              <input className="input-field" placeholder={t('study.passagePlaceholder')} value={passage} onChange={e=>setPassage(e.target.value)}/>
             </div>
             <div className="grid-2" style={{gap:12}}>
-              {[[groupType,setGroupType,GROUP_TYPES,t('studyGroupType')],[length,setLength,LENGTHS,t('studyLength')],[tone,setTone,TONES,t('studyTone')]].map(([val,set,opts,label])=>(
-                <div key={label} className="input-group" style={{gridColumn:label===t('studyTone')?'1/-1':'auto'}}>
-                  <label className="input-label">{label}</label>
-                  <select className="select-field" value={val} onChange={e=>set(e.target.value)}>{opts.map(o=><option key={o}>{o}</option>)}</select>
-                </div>
-              ))}
+              <div className="input-group">
+                <label className="input-label">{t('studyGroupType')}</label>
+                <select className="select-field" value={groupType} onChange={e=>setGroupType(e.target.value)}>
+                  {GROUP_TYPES.map(opt => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">{t('studyLength')}</label>
+                <select className="select-field" value={length} onChange={e=>setLength(e.target.value)}>
+                  {LENGTHS.map(opt => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
+                </select>
+              </div>
+              <div className="input-group" style={{gridColumn:'1/-1'}}>
+                <label className="input-label">{t('studyTone')}</label>
+                <select className="select-field" value={tone} onChange={e=>setTone(e.target.value)}>
+                  {TONES.map(opt => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
+                </select>
+              </div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
               <div className="input-group" style={{flex:1,minWidth:140}}>
@@ -151,7 +210,9 @@ export default function StudyPage() {
               </div>
               <div className="input-group" style={{flex:1,minWidth:140}}>
                 <label className="input-label">{t('studyTranslation')}</label>
-                <select className="select-field" value={tran} onChange={e=>setTran(e.target.value)}>{TRANSLATIONS.map(t=><option key={t.code} value={t.code}>{t.code}</option>)}</select>
+                <select className="select-field" value={tran} onChange={e=>setTran(e.target.value)}>
+                  {TRANSLATIONS.map(t=> <option key={t.code} value={t.code}>{t.code}</option>)}
+                </select>
               </div>
             </div>
             <MagneticBtn onClick={gen} disabled={!topic.trim()||loading} className="btn btn-primary btn-lg" style={{width:'100%',justifyContent:'center',gap:10}}>
@@ -161,24 +222,24 @@ export default function StudyPage() {
             <AnimatePresence>
               {!loading&&guide&&(
                 <motion.div ref={resultRef} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} style={{display:'flex',flexDirection:'column',gap:12}}>
-                  <div className="ai-disclaimer" role="note"><span>✦</span><span>{t('aiDisclaimer')}</span></div>
+                  <div className="ai-disclaimer" role="note"><span>✦</span><span>{t('disclaimer')}</span></div>
                   <div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:20,padding:24}}>
                     <div style={{fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--gold-700)',marginBottom:8}}>{t('studyGuide')}</div>
                     <h2 style={{fontFamily:'var(--font-serif)',fontSize:'clamp(20px,3vw,28px)',fontWeight:500,color:'var(--text-primary)',marginBottom:8}}>{guide.title}</h2>
                     <p style={{fontSize:14,color:'var(--text-muted)',lineHeight:1.65}}>{guide.objective}</p>
                   </div>
                   {[
-                    {id:'ice',label:t('icebreaker'),content:guide.icebreaker},
-                    {id:'open',label:t('openingPrayer'),content:guide.openingPrayer},
-                    {id:'scr',label:t('mainScripture'),content:guide.mainScripture},
-                    {id:'bg',label:t('backgroundContext'),content:guide.backgroundContext},
-                    {id:'pts',label:t('lessonPoints'),content:guide.lessonPoints?.map((p,i)=>`${i+1}. ${p}`).join('\n')},
-                    {id:'disc',label:t('discussionQuestions'),content:guide.discussionQuestions?.map((q,i)=>`${i+1}. ${q}`).join('\n')},
-                    {id:'ref',label:t('reflectionPrompt'),content:guide.reflectionPrompt},
-                    {id:'act',label:t('groupActivity'),content:guide.groupActivity},
-                    {id:'chall',label:t('weeklyChallenge'),content:guide.weeklyChallenge},
-                    {id:'close',label:t('closingPrayerStudy'),content:guide.closingPrayer},
-                    {id:'wa',label:t('whatsappInvite'),content:guide.whatsappInvite},
+                    {id:'ice', label: t('icebreaker'), content: guide.icebreaker},
+                    {id:'open', label: t('openingPrayer'), content: guide.openingPrayer},
+                    {id:'scr', label: t('mainScripture'), content: guide.mainScripture},
+                    {id:'bg', label: t('backgroundContext'), content: guide.backgroundContext},
+                    {id:'pts', label: t('lessonPoints'), content: guide.lessonPoints?.map((p,i)=>`${i+1}. ${p}`).join('\n')},
+                    {id:'disc', label: t('discussionQuestions'), content: guide.discussionQuestions?.map((q,i)=>`${i+1}. ${q}`).join('\n')},
+                    {id:'ref', label: t('reflectionPrompt'), content: guide.reflectionPrompt},
+                    {id:'act', label: t('groupActivity'), content: guide.groupActivity},
+                    {id:'chall', label: t('weeklyChallenge'), content: guide.weeklyChallenge},
+                    {id:'close', label: t('closingPrayerStudy'), content: guide.closingPrayer},
+                    {id:'wa', label: t('whatsappInvite'), content: guide.whatsappInvite},
                   ].filter(s=>s.content).map(s=>(
                     <Section key={s.id} id={s.id} label={s.label}>
                       <p style={{fontSize:14,color:'var(--text-secondary)',lineHeight:1.75,whiteSpace:'pre-line',paddingTop:12}}>{s.content}</p>
@@ -205,10 +266,10 @@ export default function StudyPage() {
                       <Icon3D name="library" tone="gold" active size={17} badgeSize={45}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:14,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.title||g.topic}</div>
-                        <div style={{fontSize:11,color:'var(--text-muted)'}}>{g.groupType} · {g.date}</div>
+                        <div style={{fontSize:11,color:'var(--text-muted)'}}>{t(GROUP_TYPES.find(opt => opt.value === g.groupType)?.labelKey || g.groupType)} · {g.date}</div>
                       </div>
                       <div style={{display:'flex',gap:8,flexShrink:0}}>
-                        <button onClick={e=>{e.stopPropagation();const txt=`📚 *${g.title||g.topic}*\n\nSaved study guide from Keryva · OmniCraft Studios`;window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank')}} className="btn btn-outline btn-sm" style={{padding:'6px 10px',fontSize:12}}>{t('whatsapp')}</button>
+                        <button onClick={e=>{e.stopPropagation();const txt=`📚 *${g.title||g.topic}*\n\n${t('study.shareLibraryText')}`;window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank')}} className="btn btn-outline btn-sm" style={{padding:'6px 10px',fontSize:12}}>{t('whatsapp')}</button>
                       </div>
                     </motion.div>
                   ))}

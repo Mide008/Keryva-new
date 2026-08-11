@@ -1,3 +1,4 @@
+// src/pages/PrayerPage.jsx
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAI } from '@/lib/useAI'
@@ -31,7 +32,7 @@ export default function PrayerPage(){
     setBody(`${pendingVerse.ref} — ${pendingVerse.text}\n\nLord, `)
     setShowForm(true)
     setPendingVerse(null)
-    showToast(`${pendingVerse.ref} added to your prayer`, '📎')
+    showToast(t('prayer.verseAddedToast', { ref: pendingVerse.ref }), '📎')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingVerse])
   const [tran,setTran]=useState(user.translation||'KJV')
@@ -62,7 +63,7 @@ export default function PrayerPage(){
       }))
       setScriptures(verified)
     } else {
-      showToast(error || 'Could not fetch a scripture for this prayer right now', '❌')
+      showToast(error || t('prayer.couldNotFetchScripture'), '❌')
     }
     setTitle('');setBody('');setShowForm(false)
   }
@@ -72,12 +73,12 @@ export default function PrayerPage(){
     if(raw){
       setAiNote(n=>({...n,[p.id]:raw}))
     } else {
-      showToast(error || t('aiRequestFailed'), '❌')
+      showToast(error || t('requestFailed'), '❌')
     }
   }
 
   const shareWA=(p)=>{
-    const msg=`🙏 *Prayer Request*\n\n${p.title}\n\n${p.text}\n\n${p.category} · ${p.date}\n\n— Keryva · OmniCraft Studios`
+    const msg=`🙏 *${t('prayer.shareTitle')}*\n\n${p.title}\n\n${p.text}\n\n${p.category} · ${p.date}\n\n— Keryva · OmniCraft Studios`
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank')
     showToast(t('shareToWhatsApp'),'💬')
   }
@@ -136,11 +137,11 @@ export default function PrayerPage(){
               <h3 style={{fontFamily:'var(--font-serif)',fontSize:20,fontWeight:500}}>{mode==='desk'?t('newPrayerRequest'):t('logPrayer')}</h3>
               <div className="input-group">
                 <label className="input-label">{t('prayerTitleLabel')}</label>
-                <input className="input-field" placeholder="e.g. Healing for my mother" value={title} onChange={e=>setTitle(e.target.value)}/>
+                <input className="input-field" placeholder={t('prayerTitlePlaceholder')} value={title} onChange={e=>setTitle(e.target.value)}/>
               </div>
               <div className="input-group">
                 <label className="input-label">{t('prayerTextLabel')}</label>
-                <textarea className="textarea-field" rows={4} placeholder="Write your prayer request, intercession, or praise report…" value={body} onChange={e=>setBody(e.target.value)}/>
+                <textarea className="textarea-field" rows={4} placeholder={t('prayerTextPlaceholder')} value={body} onChange={e=>setBody(e.target.value)}/>
               </div>
               <div className="grid-2" style={{gap:12}}>
                 <div className="input-group">
@@ -151,7 +152,7 @@ export default function PrayerPage(){
                   <div className="input-group">
                     <label className="input-label">{t('prayerUrgency')}</label>
                     <select className="select-field" value={urgency} onChange={e=>setUrgency(e.target.value)}>
-                      <option value="normal">Normal</option>
+                      <option value="normal">{t('normal')}</option>
                       <option value="urgent">{t('urgent')}</option>
                     </select>
                   </div>
@@ -182,7 +183,7 @@ export default function PrayerPage(){
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:6}}>
                   <div className="verse-ref" style={{cursor:'pointer',textDecoration:'underline',textDecorationColor:'var(--border-gold)'}} title={t('verseActionGoToBible')} onClick={()=>{
                     const m = v.ref?.match(/^(.+?)\s+(\d+):(\d+)/)
-                    if(!m){showToast('Could not open this reference','⚠️');return}
+                    if(!m){showToast(t('couldNotOpenReference'),'⚠️');return}
                     setPendingChapter({bookName:m[1].trim(),chapter:parseInt(m[2],10),verse:parseInt(m[3],10),translation:v.translation||'KJV'})
                     setActivePage('bible')
                   }}>{v.ref} · {v.translation}</div>
@@ -192,7 +193,7 @@ export default function PrayerPage(){
                 {v.note&&<p style={{fontSize:13,color:'var(--text-muted)',lineHeight:1.6}}>{v.note}</p>}
               </div>
             ))}
-            <button onClick={()=>setScriptures([])} className="btn btn-ghost btn-sm" style={{alignSelf:'flex-end'}}>Dismiss ×</button>
+            <button onClick={()=>setScriptures([])} className="btn btn-ghost btn-sm" style={{alignSelf:'flex-end'}}>{t('dismiss')}</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -200,7 +201,7 @@ export default function PrayerPage(){
       {/* Tabs */}
       <div style={{display:'flex',gap:0,background:'var(--bg-card)',border:'1px solid var(--border-subtle)',borderRadius:12,padding:4,width:'fit-content'}}>
         {['Active','Answered','All'].map(tabKey=>{
-          const label = tabKey === 'Active' ? t('activePrayers') : tabKey === 'Answered' ? t('answeredPrayers') : 'All'
+          const label = tabKey === 'Active' ? t('activePrayers') : tabKey === 'Answered' ? t('answeredPrayers') : t('all')
           return (
             <button key={tabKey} onClick={()=>setTab(tabKey)} style={{padding:'6px 16px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',background:tab===tabKey?'var(--ink-900)':'transparent',color:tab===tabKey?'var(--text-inverse)':'var(--text-muted)',border:'none',transition:'all var(--dur-fast) ease'}}>
               {label}{tabKey==='Active'&&stats.praying>0&&<span style={{marginLeft:5,background:'var(--gold-500)',color:'var(--ink-900)',borderRadius:10,padding:'1px 6px',fontSize:10}}>{stats.praying}</span>}
@@ -211,7 +212,7 @@ export default function PrayerPage(){
 
       {/* Prayer list */}
       {filtered.length===0
-        ?<EmptyState icon="🙏" headline={tab==='Answered'?t('noAnswered'):t('prayerJourney')} body={tab==='Answered'?'When God moves, mark a prayer answered.':'Log your first request and receive scripture to stand on.'} ctaLabel={tab!=='Answered'?t('addPrayerCta'):undefined} onCta={tab!=='Answered'?()=>setShowForm(true):undefined}/>
+        ?<EmptyState icon="🙏" headline={tab==='Answered'?t('noAnswered'):t('prayerJourney')} body={tab==='Answered'?t('whenGodMoves'):t('logFirstRequest')} ctaLabel={tab!=='Answered'?t('addPrayerCta'):undefined} onCta={tab!=='Answered'?()=>setShowForm(true):undefined}/>
         :<div style={{display:'flex',flexDirection:'column',gap:10}}>
           {filtered.map((p,i)=>(
             <motion.div key={p.id} className="card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}} style={{padding:0,overflow:'hidden'}}>
@@ -240,21 +241,24 @@ export default function PrayerPage(){
                         <p style={{fontSize:13,color:'var(--text-muted)'}}>{p.followUpNotes}</p>
                       </div>}
                       {p.testimony&&<div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
-                        <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>✨ Testimony</div>
+                        <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>✨ {t('testimony')}</div>
                         <p style={{fontSize:13,color:'var(--text-secondary)',fontStyle:'italic'}}>{p.testimony}</p>
                       </div>}
                       {aiNote[p.id]&&<div style={{background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
-                        <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>{t('aiEncouragement')}</div>
+                        <div style={{fontSize:11,fontWeight:500,color:'var(--gold-700)',marginBottom:4}}>{t('encouragement')}</div>
                         <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.65}}>{aiNote[p.id]}</p>
                       </div>}
                       <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                        {p.status==='praying'&&<button onClick={()=>{const testimony=prompt('Mark as answered — want to add a short testimony? (optional, leave blank to skip)');updatePrayer(p.id,{status:'answered',answeredDate:new Date().toISOString().split('T')[0],testimony:testimony||undefined})}} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'1px solid var(--sage-300)',gap:6}}>{t('markAnswered')}</button>}
+                        {p.status==='praying'&&<button onClick={()=>{
+                          const testimony=prompt(t('markAnsweredPrompt'))
+                          updatePrayer(p.id,{status:'answered',answeredDate:new Date().toISOString().split('T')[0],testimony:testimony||undefined})
+                        }} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'1px solid var(--sage-300)',gap:6}}>{t('markAnswered')}</button>}
                         <button onClick={()=>genEncouragement(p)} disabled={loading} className="btn btn-sm" style={{background:'var(--gold-100)',color:'var(--gold-700)',border:'1px solid var(--gold-300)',gap:6}}>{t('encouragement')}</button>
                         <button onClick={()=>shareWA(p)} className="btn btn-sm" style={{background:'var(--bg-card)',border:'1px solid var(--border-subtle)',gap:6}}>{t('sharePrayer')}</button>
                         {mode==='desk'&&<>
-                          <button onClick={()=>{const note=prompt('Follow-up note:');if(note)updatePrayer(p.id,{followUpNotes:note})}} className="btn btn-sm btn-outline">{t('followUp')}</button>
+                          <button onClick={()=>{const note=prompt(t('followUpNotePrompt'));if(note)updatePrayer(p.id,{followUpNotes:note})}} className="btn btn-sm btn-outline">{t('followUp')}</button>
                         </>}
-                        <button onClick={async()=>{if(await confirmAction('Delete this prayer?',{tone:'danger',confirmLabel:'Delete',detail:'This cannot be undone.'}))deletePrayer(p.id)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:'var(--terra-400)',padding:'6px',marginLeft:'auto'}} title={t('delete')}>🗑</button>
+                        <button onClick={async()=>{if(await confirmAction(t('deletePrayerConfirm'),{tone:'danger',confirmLabel:t('delete'),detail:t('cannotBeUndone')}))deletePrayer(p.id)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:'var(--terra-400)',padding:'6px',marginLeft:'auto'}} title={t('delete')}>🗑</button>
                       </div>
                     </div>
                   </motion.div>

@@ -1,3 +1,4 @@
+// src/pages/BiblePage.jsx
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useApp } from '@/lib/AppContext'
@@ -72,7 +73,6 @@ export default function BiblePage(){
       if(pendingChapter.verse)setPendingVerseNum(pendingChapter.verse)
     }
     setPendingChapter(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[pendingChapter])
 
   useEffect(()=>{
@@ -99,7 +99,6 @@ export default function BiblePage(){
       },150)
     }
     setPendingVerseNum(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[verses,chapterLoading,pendingVerseNum])
 
   const filtered=BIBLE_BOOKS.filter(b=>{
@@ -134,7 +133,7 @@ export default function BiblePage(){
     else if(type==='addPrayer'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('prayer');showToast(t('verseReadyPrayer') || 'Verse ready for prayer','🙏')}
     else if(type==='addStudy'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('study');showToast(t('verseReadyStudy') || 'Verse ready for study guide','📚')}
     else if(type==='addSunday'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sunday');showToast(t('verseReadySunday') || 'Verse ready for Sunday Pack','📋')}
-    else if(type==='note'){const n=prompt(`Note for ${ref}:`);if(n)addVerseNote(ref,selected.text,n,null)}
+    else if(type==='note'){const n=prompt(t('bibleNotePrompt', { ref })); if(n) addVerseNote(ref, selected.text, n, null)}
     closeAction()
   }
 
@@ -146,7 +145,7 @@ export default function BiblePage(){
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <div style={{position:'relative',flex:1}}>
                 <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontSize:15,pointerEvents:'none'}}>🔍</span>
-                <input className="input-field" style={{paddingLeft:36}} placeholder="Search books, or type a reference like Gen 3 / John 3:16" value={bSearch} onChange={e=>setBSearch(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&jumpMatch)jumpToReference()}}/>
+                <input className="input-field" style={{paddingLeft:36}} placeholder={t('bibleSearchPlaceholder')} value={bSearch} onChange={e=>setBSearch(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&jumpMatch)jumpToReference()}}/>
               </div>
               <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>setTran(e.target.value)}>
                 {TRANSLATIONS.map(t=><option key={t.code} value={t.code}>{t.code}</option>)}
@@ -155,8 +154,8 @@ export default function BiblePage(){
             {jumpMatch&&(
               <motion.button initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} onClick={jumpToReference}
                 style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',borderRadius:12,background:'var(--ink-900)',color:'var(--text-inverse)',border:'none',cursor:'pointer',width:'100%'}}>
-                <span style={{fontSize:14,fontWeight:500}}>Go to {jumpMatch.book.name} {jumpMatch.chapter}{jumpMatch.verse?`:${jumpMatch.verse}`:''}</span>
-                <span style={{fontSize:13,opacity:0.7}}>Press Enter →</span>
+                <span style={{fontSize:14,fontWeight:500}}>{t('bibleGoToReference', { book: jumpMatch.book.name, chapter: jumpMatch.chapter, verse: jumpMatch.verse ? `:${jumpMatch.verse}` : '' })}</span>
+                <span style={{fontSize:13,opacity:0.7}}>{t('biblePressEnter')}</span>
               </motion.button>
             )}
             <div style={{padding:'10px 14px',background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,fontSize:12,color:'var(--gold-800)'}}>
@@ -237,7 +236,7 @@ export default function BiblePage(){
               {chapterLoading&&(
                 <div style={{textAlign:'center',padding:40}}>
                   <div className="loading-dots"><div className="loading-dot"/><div className="loading-dot"/><div className="loading-dot"/></div>
-                  <p style={{fontSize:13,color:'var(--text-muted)',marginTop:12}}>Loading {book.name} {ch}…</p>
+                  <p style={{fontSize:13,color:'var(--text-muted)',marginTop:12}}>{t('bibleLoadingChapter', { book: book.name, chapter: ch })}</p>
                 </div>
               )}
               {!chapterLoading&&verses.map(v=>(
@@ -291,8 +290,8 @@ export default function BiblePage(){
                   </button>
                 ))}
               </div>
-              {/* AI actions */}
-              <div style={{fontSize:11,fontWeight:500,color:'var(--text-muted)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>{t('aiInsights')}</div>
+              {/* Insights (renamed from "AI Insights") */}
+              <div style={{fontSize:11,fontWeight:500,color:'var(--text-muted)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>{t('insights')}</div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:aiResult?16:0}}>
                 {[
                   ['explain', t('explain')],

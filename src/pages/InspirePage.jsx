@@ -1,3 +1,4 @@
+// src/pages/InspirePage.jsx
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useApp } from '@/lib/AppContext'
@@ -39,7 +40,7 @@ export default function InspirePage() {
     e?.preventDefault()
     const searchTerm = (override ?? query).trim() || (selectedMood ? t(selectedMood.labelKey) : '')
     if (!searchTerm) {
-      showToast(t('noQuery') || 'Please enter a topic or select a mood', '⚠️')
+      showToast(t('noQuery') || t('inspire.enterTopicOrMood'), '⚠️')
       return
     }
 
@@ -81,11 +82,11 @@ export default function InspirePage() {
       } else {
         // ask() returned null — all AI engines failed. Surface the real reason
         // instead of doing nothing (this was the root cause of "search does nothing").
-        showToast(error || t('aiRequestFailed'), '❌')
+        showToast(error || t('requestFailed'), '❌')
       }
     } catch (err) {
       console.error('Search error:', err)
-      showToast(t('aiRequestFailed'), '❌')
+      showToast(t('requestFailed'), '❌')
     }
   }
 
@@ -139,13 +140,13 @@ export default function InspirePage() {
               }}
               disabled={loading}
             >
-              {loading ? '...' : '🔍 Search'}
+              {loading ? '...' : t('inspire.searchButton')}
             </button>
           </form>
 
           {recentSearches.length>0 && !hasSearched && (
             <div style={{marginBottom:20}}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 8 }}>Recent searches</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 8 }}>{t('inspire.recentSearches')}</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
                 {recentSearches.map((term,i)=>(
                   <button key={i} onClick={()=>{setQuery(term);handleSearch(null,term)}} className="tag tag-ink" style={{cursor:'pointer',padding:'6px 13px',fontSize:12}}>
@@ -203,7 +204,7 @@ export default function InspirePage() {
           icon="📖"
           headline={t('noVersesFound')}
           body={t('tryDifferentWords')}
-          ctaLabel="Try again"
+          ctaLabel={t('inspire.tryAgain')}
           onCta={() => { setQuery(''); setSelectedMood(null); setHasSearched(false); }}
         />
       )}
@@ -266,7 +267,7 @@ export default function InspirePage() {
                 <button
                   onClick={() => {
                     const parsed = parseRefForBible(verse.reference)
-                    if (!parsed) { showToast('Could not locate that verse in the Bible Reader', '⚠️'); return }
+                    if (!parsed) { showToast(t('inspire.cannotLocate'), '⚠️'); return }
                     setPendingChapter({ ...parsed, translation: user.translation||'KJV' })
                     setActivePage('bible')
                   }}

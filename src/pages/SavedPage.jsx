@@ -1,3 +1,4 @@
+// src/pages/SavedPage.jsx
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Icon3D, { GLYPHS } from '@/components/ui/Icon3D'
@@ -8,7 +9,17 @@ import { VERSE_PROMPTS } from '@/lib/aiServices'
 import EmptyState from '@/components/ui/EmptyState'
 import { RevealCard } from '@/components/ui/MotionComponents'
 
-const COLLECTIONS=['General','Sermon','Prayer','Study','Encouragement','Prophecy','Healing','Faith']
+// Collections with labelKey for translation
+const COLLECTIONS = [
+  { key: 'General', labelKey: 'saved.collectionGeneral' },
+  { key: 'Sermon', labelKey: 'saved.collectionSermon' },
+  { key: 'Prayer', labelKey: 'saved.collectionPrayer' },
+  { key: 'Study', labelKey: 'saved.collectionStudy' },
+  { key: 'Encouragement', labelKey: 'saved.collectionEncouragement' },
+  { key: 'Prophecy', labelKey: 'saved.collectionProphecy' },
+  { key: 'Healing', labelKey: 'saved.collectionHealing' },
+  { key: 'Faith', labelKey: 'saved.collectionFaith' },
+]
 
 export default function SavedPage(){
   const { t } = useTranslation()
@@ -45,7 +56,7 @@ export default function SavedPage(){
 
   const goToBible=(v)=>{
     const m=v.ref.match(/^(.+?)\s+(\d+):(\d+)/)
-    if(!m){showToast('Could not open this reference','⚠️');return}
+    if(!m){showToast(t('saved.couldNotOpenRef'),'⚠️');return}
     setPendingChapter({bookName:m[1].trim(),chapter:parseInt(m[2],10),verse:parseInt(m[3],10),translation:v.translation||'KJV'})
     setActivePage('bible')
   }
@@ -63,7 +74,8 @@ export default function SavedPage(){
   const pullInto=(target,v)=>{
     setPendingVerse(v)
     setActivePage(target)
-    showToast(`Verse ready to add to ${target}`,'📎')
+    const targetLabel = { sermon: t('sermon'), prayer: t('prayer'), study: t('study'), sunday: t('sunday') }[target] || target
+    showToast(t('saved.verseReadyToAdd', { target: targetLabel }), '📎')
   }
 
   const TABS=[
@@ -105,15 +117,17 @@ export default function SavedPage(){
               </div>
               <select className="select-field" style={{width:'auto',minWidth:110}} value={filterCol} onChange={e=>setFilterCol(e.target.value)}>
                 <option value="All">{t('allCollections')}</option>
-                {COLLECTIONS.map(c=><option key={c}>{c}</option>)}
+                {COLLECTIONS.map(c => <option key={c.key} value={c.key}>{t(c.labelKey)}</option>)}
               </select>
               {translations.length>1&&(
                 <select className="select-field" style={{width:'auto',minWidth:80}} value={filterTran} onChange={e=>setFilterTran(e.target.value)}>
-                  <option value="All">All</option>
+                  <option value="All">{t('saved.allTranslations')}</option>
                   {translations.map(t=><option key={t}>{t}</option>)}
                 </select>
               )}
-              <span style={{fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap'}}>{filtered.length} verse{filtered.length!==1?'s':''}</span>
+              <span style={{fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap'}}>
+                {filtered.length} {filtered.length === 1 ? t('saved.verseSingular') : t('saved.versePlural')}
+              </span>
             </div>
 
             {filtered.length===0
@@ -140,19 +154,19 @@ export default function SavedPage(){
                         <button onClick={()=>goToBible(v)} className="btn btn-outline btn-sm" style={{padding:'7px 12px'}}>{t('verseActionGoToBible')}</button>
                         <button onClick={()=>share(v)} className="btn btn-gold btn-sm" style={{flex:1,justifyContent:'center',gap:5}}>{t('whatsapp')}</button>
                         <button onClick={()=>copy(v)} className="btn btn-outline btn-sm" style={{padding:'7px 12px'}}>{t('copy')}</button>
-                        <button onClick={async()=>{if(await confirmAction('Remove this saved verse?',{tone:'danger',confirmLabel:'Remove'}))removeVerse(v.id)}} className="btn btn-outline btn-sm" style={{padding:'7px 12px',color:'var(--terra-400)',borderColor:'var(--terra-300)'}}>{t('delete')}</button>
+                        <button onClick={async()=>{if(await confirmAction(t('saved.removeConfirm'),{tone:'danger',confirmLabel:t('remove')}))removeVerse(v.id)}} className="btn btn-outline btn-sm" style={{padding:'7px 12px',color:'var(--terra-400)',borderColor:'var(--terra-300)'}}>{t('delete')}</button>
                       </div>
                       {/* Pull-into + AI actions */}
                       <div style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
-                        <button onClick={()=>pullInto('sermon',v)} className="btn btn-sm" style={{background:'var(--terra-100)',color:'var(--terra-600)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}','Sermon')}</button>
-                        <button onClick={()=>pullInto('prayer',v)} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}','Prayer')}</button>
-                        <button onClick={()=>pullInto('study',v)} className="btn btn-sm" style={{background:'var(--gold-100)',color:'var(--gold-800)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}','Study')}</button>
-                        <button onClick={()=>pullInto('sunday',v)} className="btn btn-sm" style={{background:'var(--ink-100)',color:'var(--ink-600)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}','Sunday')}</button>
+                        <button onClick={()=>pullInto('sermon',v)} className="btn btn-sm" style={{background:'var(--terra-100)',color:'var(--terra-600)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}',t('sermon'))}</button>
+                        <button onClick={()=>pullInto('prayer',v)} className="btn btn-sm" style={{background:'var(--sage-100)',color:'var(--sage-600)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}',t('prayer'))}</button>
+                        <button onClick={()=>pullInto('study',v)} className="btn btn-sm" style={{background:'var(--gold-100)',color:'var(--gold-800)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}',t('study'))}</button>
+                        <button onClick={()=>pullInto('sunday',v)} className="btn btn-sm" style={{background:'var(--ink-100)',color:'var(--ink-600)',border:'none',fontSize:11,padding:'5px 10px'}}>{t('savedAddTo').replace('{target}',t('sunday'))}</button>
                         <button onClick={()=>aiAction('explain',v)} className="btn btn-sm" style={{background:'var(--bg-primary)',border:'1px solid var(--border-subtle)',fontSize:11,padding:'5px 10px'}}>{t('explain')}</button>
                         <button onClick={()=>aiAction('preach',v)} className="btn btn-sm" style={{background:'var(--bg-primary)',border:'1px solid var(--border-subtle)',fontSize:11,padding:'5px 10px'}}>{t('preachingAngle')}</button>
                         <button onClick={()=>aiAction('counsel',v)} className="btn btn-sm" style={{background:'var(--bg-primary)',border:'1px solid var(--border-subtle)',fontSize:11,padding:'5px 10px'}}>{t('counsellingAngle')}</button>
                         <button onClick={()=>aiAction('youth',v)} className="btn btn-sm" style={{background:'var(--bg-primary)',border:'1px solid var(--border-subtle)',fontSize:11,padding:'5px 10px'}}>{t('youthFriendly')}</button>
-                        <button onClick={()=>{const n=prompt(`Note for ${v.ref}:`);if(n)addVerseNote(v.ref,v.text,n,null,v.tags||[])}} className="btn btn-sm" style={{background:'var(--bg-primary)',border:'1px solid var(--border-subtle)',fontSize:11,padding:'5px 10px'}}>{t('savedNote')}</button>
+                        <button onClick={()=>{const n=prompt(t('saved.notePrompt', { ref: v.ref }));if(n)addVerseNote(v.ref,v.text,n,null,v.tags||[])}} className="btn btn-sm" style={{background:'var(--bg-primary)',border:'1px solid var(--border-subtle)',fontSize:11,padding:'5px 10px'}}>{t('savedNote')}</button>
                       </div>
                       <AnimatePresence>
                         {actionVerse?.id===v.id&&(
@@ -198,7 +212,7 @@ export default function SavedPage(){
 
         {tab==='Studies'&&(
           <motion.div key="studies" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}>
-            {studyGuides.length===0?<EmptyState icon="📚" headline={t('noSavedStudiesTitle')} body={t('noSavedStudiesBody')} ctaLabel={t('goToStudyGuide') || 'Go to Study Guide'} onCta={()=>setActivePage('study')}/>
+            {studyGuides.length===0?<EmptyState icon="📚" headline={t('noSavedStudiesTitle')} body={t('noSavedStudiesBody')} ctaLabel={t('goToStudyGuide') || t('goToStudyGuide')} onCta={()=>setActivePage('study')}/>
               :<div style={{display:'flex',flexDirection:'column',gap:10}}>
                 {studyGuides.map((g,i)=>(
                   <motion.div key={g.id} className="card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}} style={{display:'flex',alignItems:'center',gap:14}}>
@@ -233,7 +247,7 @@ export default function SavedPage(){
               </div>
             </>}
             {socialPacks.length>0&&<>
-              <h3 style={{fontFamily:'var(--font-serif)',fontSize:16,fontWeight:500}}>📱 Social</h3>
+              <h3 style={{fontFamily:'var(--font-serif)',fontSize:16,fontWeight:500}}>{t('saved.socialLabel')}</h3>
               <div style={{display:'flex',flexDirection:'column',gap:10}}>
                 {socialPacks.map((p,i)=>(
                   <motion.div key={p.id} className="card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}} style={{display:'flex',alignItems:'center',gap:14}}>
@@ -247,7 +261,7 @@ export default function SavedPage(){
                 ))}
               </div>
             </>}
-            {sundayPacks.length===0&&socialPacks.length===0&&<EmptyState icon="📦" headline={t('noSavedPacksTitle')} body={t('noSavedPacksBody')} ctaLabel={t('goToSundayPack') || 'Go to Sunday Pack'} onCta={()=>setActivePage('sunday')}/>}
+            {sundayPacks.length===0&&socialPacks.length===0&&<EmptyState icon="📦" headline={t('noSavedPacksTitle')} body={t('noSavedPacksBody')} ctaLabel={t('goToSundayPack') || t('goToSundayPack')} onCta={()=>setActivePage('sunday')}/>}
           </motion.div>
         )}
       </AnimatePresence>

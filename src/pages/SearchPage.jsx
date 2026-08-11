@@ -1,3 +1,4 @@
+// src/pages/SearchPage.jsx
 import { useState, useEffect, useRef } from 'react'
 import { useApp } from '@/lib/AppContext'
 import { useAI } from '@/lib/useAI'
@@ -35,7 +36,7 @@ export default function SearchPage() {
     e?.preventDefault()
     const term = (override ?? query).trim()
     if (!term) {
-      showToast(t('noQuery') || 'Please enter a search term', '⚠️')
+      showToast(t('noQuery') || t('search.enterTerm'), '⚠️')
       return
     }
 
@@ -74,14 +75,13 @@ export default function SearchPage() {
           setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
         }
       } else {
-        showToast(error || t('aiRequestFailed'), '❌')
+        showToast(error || t('requestFailed'), '❌')
       }
     } catch (err) {
       console.error('Search error:', err)
-      showToast(t('aiRequestFailed'), '❌')
+      showToast(t('requestFailed'), '❌')
     }
   }
-
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -96,7 +96,7 @@ export default function SearchPage() {
             autoFocus
           />
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? '...' : '🔍 Search'}
+            {loading ? '...' : t('search.searchButton')}
           </button>
         </form>
       </RevealCard>
@@ -118,8 +118,8 @@ export default function SearchPage() {
         <EmptyState
           icon="📖"
           headline={t('noVersesFound')}
-          body={`${t('tryDifferentWords')}`}
-          ctaLabel="Try again"
+          body={t('tryDifferentWords')}
+          ctaLabel={t('search.tryAgain')}
           onCta={() => { setQuery(''); setHasSearched(false); }}
         />
       )}
@@ -170,7 +170,7 @@ export default function SearchPage() {
                 <button
                   onClick={() => {
                     const parsed = parseRefForBible(verse.reference)
-                    if (!parsed) { showToast('Could not locate that verse in the Bible Reader', '⚠️'); return }
+                    if (!parsed) { showToast(t('search.couldNotLocate'), '⚠️'); return }
                     setPendingChapter({ ...parsed, translation: user.translation||'KJV' })
                     setActivePage('bible')
                   }}

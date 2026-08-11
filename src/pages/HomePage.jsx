@@ -1,3 +1,4 @@
+// src/pages/HomePage.jsx
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useApp } from '@/lib/AppContext'
@@ -29,7 +30,7 @@ export default function HomePage() {
   const downloadCard = () => {
     const dataUrl = generateQuoteCardImage({ text: today.text, reference: `${today.ref} · ${today.translation}` })
     downloadQuoteCard(dataUrl, `rhema-${today.ref.replace(/\s+/g,'-').toLowerCase()}.png`)
-    showToast('Quote card downloaded', '🖼️')
+    showToast(t('home.quoteCardDownloaded'), '🖼️')
   }
 
   return (
@@ -60,7 +61,7 @@ export default function HomePage() {
               </div>
               <div style={{display:'flex',gap:8}}>
                 <MagneticBtn onClick={share} className="btn btn-gold btn-sm">{t('shareVerse')}</MagneticBtn>
-                <button onClick={downloadCard} className="btn btn-sm" style={{background:'rgba(255,255,255,0.10)',color:'rgba(250,247,242,0.80)',border:'1px solid rgba(255,255,255,0.12)'}}>🖼️ Save image</button>
+                <button onClick={downloadCard} className="btn btn-sm" style={{background:'rgba(255,255,255,0.10)',color:'rgba(250,247,242,0.80)',border:'1px solid rgba(255,255,255,0.12)'}}>🖼️ {t('home.saveImage')}</button>
                 <button onClick={()=>{
                   const m = today.ref.match(/^(.+?)\s+(\d+):/)
                   if (m) setPendingChapter({ bookName: m[1], chapter: parseInt(m[2],10), translation: today.translation||'KJV' })
@@ -77,7 +78,7 @@ export default function HomePage() {
         <form onSubmit={e=>{e.preventDefault();if(q.trim().length>1)setActivePage('inspire')}} style={{position:'relative'}}>
           <span style={{position:'absolute',left:18,top:'50%',transform:'translateY(-50%)',fontSize:18,pointerEvents:'none'}}>🔍</span>
           <input className="input-search" style={{paddingLeft:50}} placeholder={t('searchHome')}
-            value={q} onChange={e=>setQ(e.target.value)} aria-label="Search scripture"/>
+            value={q} onChange={e=>setQ(e.target.value)} aria-label={t('home.searchAria')}/>
           {q.length>1 && (
             <motion.button type="submit" initial={{opacity:0,scale:0.85}} animate={{opacity:1,scale:1}}
               className="btn btn-primary btn-sm" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',gap:6}}>
@@ -97,17 +98,17 @@ export default function HomePage() {
       <RevealCard delay={0.1}>
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
           {[
-            {end:31102,suffix:'+',label:'Verses'},
-            {end:66,label:'Books'},
-            {end:15,label:'Translations'},
-            {end:4,label:'Engines'},
+            {end:31102,suffix:'+',labelKey:'home.statsVerses'},
+            {end:66,labelKey:'home.statsBooks'},
+            {end:15,labelKey:'home.statsTranslations'},
+            {end:4,labelKey:'home.statsEngines'},
           ].map((s,i)=>(
-            <motion.div key={s.label} className="stat-card"
+            <motion.div key={s.labelKey} className="stat-card"
               initial={{opacity:0,scale:0.88}} animate={{opacity:1,scale:1}} transition={{delay:0.15+i*0.06}}>
               <div className="stat-number">
                 <CounterNumber end={s.end} suffix={s.suffix||''} duration={1.6}/>
               </div>
-              <div className="stat-label">{s.label}</div>
+              <div className="stat-label">{t(s.labelKey)}</div>
             </motion.div>
           ))}
         </div>
@@ -120,13 +121,13 @@ export default function HomePage() {
         </h2>
         <div className="grid-2" style={{gap:14}}>
           {[
-            {id:'agent',icon:'sparkle',tone:'ink',label:'Ministry Assistant',desc:'Ask in your own words',bg:'linear-gradient(135deg,#EDE4F0,#D8C8E8)'},
-            {id:'inspire',icon:'sparkle',tone:'gold',label:t('getInspired'),desc:t('getInspiredDesc'),bg:'linear-gradient(135deg,#FDF6E8,#F5E6C8)'},
-            {id:'warfare',icon:'sword',tone:'ink',label:t('navWarfare'),desc:t('warfareCardDesc'),bg:'linear-gradient(135deg,#F3E8E8,#E8D0D0)'},
-            {id:'devotional',icon:'leaf',tone:'sage',label:t('navDevotional'),desc:t('devotionalCardDesc'),bg:'linear-gradient(135deg,#F5F0E0,#EBDFC0)'},
-            {id:'sermon', icon:'megaphone',tone:'ink',label:t('sermonBuilder'),desc:t('sermonBuilderDesc'),bg:'linear-gradient(135deg,#F5EDE8,#EDD5C8)'},
-            {id:'bible',  icon:'book',tone:'gold',label:t('bibleReader'),desc:t('bibleReaderDesc'),bg:'linear-gradient(135deg,#EBF0EB,#D8E8D6)'},
-            {id:'prayer', icon:'praying',tone:'sage',label:t('prayerJournal'),desc:t('prayerJournalDesc'),bg:'linear-gradient(135deg,#EDE8F0,#D8D0E8)'},
+            {id:'agent',icon:'sparkle',tone:'ink',labelKey:'home.quickAgentTitle',descKey:'home.quickAgentDesc',bg:'linear-gradient(135deg,#EDE4F0,#D8C8E8)'},
+            {id:'inspire',icon:'sparkle',tone:'gold',labelKey:'getInspired',descKey:'getInspiredDesc',bg:'linear-gradient(135deg,#FDF6E8,#F5E6C8)'},
+            {id:'warfare',icon:'sword',tone:'ink',labelKey:'navWarfare',descKey:'warfareCardDesc',bg:'linear-gradient(135deg,#F3E8E8,#E8D0D0)'},
+            {id:'devotional',icon:'leaf',tone:'sage',labelKey:'navDevotional',descKey:'devotionalCardDesc',bg:'linear-gradient(135deg,#F5F0E0,#EBDFC0)'},
+            {id:'sermon', icon:'megaphone',tone:'ink',labelKey:'sermonBuilder',descKey:'sermonBuilderDesc',bg:'linear-gradient(135deg,#F5EDE8,#EDD5C8)'},
+            {id:'bible',  icon:'book',tone:'gold',labelKey:'bibleReader',descKey:'bibleReaderDesc',bg:'linear-gradient(135deg,#EBF0EB,#D8E8D6)'},
+            {id:'prayer', icon:'praying',tone:'sage',labelKey:'prayerJournal',descKey:'prayerJournalDesc',bg:'linear-gradient(135deg,#EDE8F0,#D8D0E8)'},
           ].map((a,i)=>(
             <motion.button key={a.id} onClick={()=>setActivePage(a.id)}
               whileHover={{y:-4,boxShadow:'0 16px 40px rgba(28,23,16,0.12)'}} whileTap={{scale:0.97}}
@@ -136,8 +137,8 @@ export default function HomePage() {
                 <Icon3D name={a.icon} tone={a.tone} active size={20} badgeSize={44}/>
               </motion.div>
               <div>
-                <div style={{fontSize:15,fontWeight:500,color:'var(--text-primary)',marginBottom:3}}>{a.label}</div>
-                <div style={{fontSize:12,color:'var(--text-muted)'}}>{a.desc}</div>
+                <div style={{fontSize:15,fontWeight:500,color:'var(--text-primary)',marginBottom:3}}>{t(a.labelKey)}</div>
+                <div style={{fontSize:12,color:'var(--text-muted)'}}>{t(a.descKey)}</div>
               </div>
               <span style={{fontSize:16,color:'var(--ink-200)',marginTop:'auto'}}>→</span>
             </motion.button>
@@ -191,7 +192,8 @@ export default function HomePage() {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
           <h2 style={{fontFamily:'var(--font-serif)',fontSize:22,fontWeight:500}}>{t('liveActivity')}</h2>
           <motion.div animate={{opacity:[1,0.4,1]}} transition={{duration:2,repeat:Infinity}} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--sage-500)',fontWeight:500}}>
-            <span style={{width:7,height:7,borderRadius:'50%',background:'var(--sage-500)',display:'inline-block'}}/>LIVE
+            <span style={{width:7,height:7,borderRadius:'50%',background:'var(--sage-500)',display:'inline-block'}}/>
+            {t('home.liveLabel')}
           </motion.div>
         </div>
         <LiveTicker/>
@@ -225,7 +227,7 @@ export default function HomePage() {
       <RevealCard delay={0.24}>
         <div style={{borderRadius:24,overflow:'hidden',position:'relative'}}>
           <img src={dailyBackgroundImage('home-secondary',900,600)}
-            alt="Open Bible on wooden table" style={{width:'100%',height:200,objectFit:'cover',display:'block'}}/>
+            alt={t('home.bottomImageAlt')} style={{width:'100%',height:200,objectFit:'cover',display:'block'}}/>
           <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(28,23,16,0.90) 0%,rgba(28,23,16,0.10) 100%)',display:'flex',alignItems:'flex-end',padding:24}}>
             <div>
               <p style={{fontFamily:'var(--font-serif)',fontSize:15,fontStyle:'italic',color:'rgba(250,247,242,0.92)',lineHeight:1.65,marginBottom:6}}>

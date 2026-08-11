@@ -1,3 +1,4 @@
+// src/pages/SocialPackPage.jsx
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Icon3D from '@/components/ui/Icon3D'
@@ -11,9 +12,32 @@ import { RevealCard, MagneticBtn, MotionHeadline } from '@/components/ui/MotionC
 import { dailyBackgroundImage } from '@/lib/bibleData'
 
 function parseJSON(raw){try{return JSON.parse(raw.replace(/```json|```/g,'').trim())}catch{return null}}
-const PLATFORMS=['WhatsApp & Instagram','Facebook','X / Twitter','TikTok / Reels','All platforms']
-const TONES=['Warm & inviting','Bold & powerful','Evangelistic','Youth-friendly','Premium & polished','Pastoral & caring']
-const CONTENT_TYPES=['Sunday invitation','Sermon quote','Midweek reminder','Encouragement','Testimony prompt','Giving reminder','Event promo']
+
+// Options with labelKey for translation
+const PLATFORMS = [
+  { value: 'WhatsApp & Instagram', labelKey: 'social.platformWhatsAppInstagram' },
+  { value: 'Facebook', labelKey: 'social.platformFacebook' },
+  { value: 'X / Twitter', labelKey: 'social.platformX' },
+  { value: 'TikTok / Reels', labelKey: 'social.platformTikTok' },
+  { value: 'All platforms', labelKey: 'social.platformAll' },
+]
+const TONES = [
+  { value: 'Warm & inviting', labelKey: 'social.toneWarm' },
+  { value: 'Bold & powerful', labelKey: 'social.toneBold' },
+  { value: 'Evangelistic', labelKey: 'social.toneEvangelistic' },
+  { value: 'Youth-friendly', labelKey: 'social.toneYouth' },
+  { value: 'Premium & polished', labelKey: 'social.tonePremium' },
+  { value: 'Pastoral & caring', labelKey: 'social.tonePastoral' },
+]
+const CONTENT_TYPES = [
+  { value: 'Sunday invitation', labelKey: 'social.typeSundayInvite' },
+  { value: 'Sermon quote', labelKey: 'social.typeSermonQuote' },
+  { value: 'Midweek reminder', labelKey: 'social.typeMidweekReminder' },
+  { value: 'Encouragement', labelKey: 'social.typeEncouragement' },
+  { value: 'Testimony prompt', labelKey: 'social.typeTestimonyPrompt' },
+  { value: 'Giving reminder', labelKey: 'social.typeGivingReminder' },
+  { value: 'Event promo', labelKey: 'social.typeEventPromo' },
+]
 
 export default function SocialPackPage(){
   const { t } = useTranslation()
@@ -32,18 +56,26 @@ export default function SocialPackPage(){
   const gen=async()=>{
     if(!topic.trim()){ showToast(t('enterThemeFirst'), '⚠️'); return }
     setPack(null)
-    const raw=await ask(SOCIAL_PACK_PROMPTS.generate({topic,scripture,church:church||'Our Church',platform,tone,contentType,languageLabel:languageLabelFor(user.language)}))
+    const raw=await ask(SOCIAL_PACK_PROMPTS.generate({
+      topic,
+      scripture,
+      church: church || t('social.defaultChurch'),
+      platform,
+      tone,
+      contentType,
+      languageLabel: languageLabelFor(user.language)
+    }))
     if(raw){
       const j=parseJSON(raw)
       if(j){
         setPack(j)
-        showToast('Your social pack is ready','✓')
+        showToast(t('social.packReady'),'✓')
         setTimeout(()=>resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),100)
       } else {
         showToast(t('errorParsing'),'❌')
       }
     } else {
-      showToast(error || t('aiRequestFailed'), '❌')
+      showToast(error || t('requestFailed'), '❌')
     }
   }
 
@@ -67,8 +99,8 @@ export default function SocialPackPage(){
     </div>
   )
 
-  const buildLabel = t('buildTab') || 'Build'
-  const libraryLabel = t('libraryTab') || 'Library'
+  const buildLabel = t('buildTab')
+  const libraryLabel = t('libraryTab')
 
   return(
     <div style={{display:'flex',flexDirection:'column',gap:24}}>
@@ -87,7 +119,11 @@ export default function SocialPackPage(){
         {['Build','Library'].map(tabKey=>{
           const label = tabKey === 'Build' ? buildLabel : libraryLabel
           return (
-            <button key={tabKey} onClick={()=>setTab(tabKey)} style={{padding:'7px 22px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',background:tab===tabKey?'var(--ink-900)':'transparent',color:tab===tabKey?'var(--text-inverse)':'var(--text-muted)',border:'none',transition:'all var(--dur-fast) ease'}}>
+            <button key={tabKey} onClick={()=>setTab(tabKey)}
+              style={{padding:'7px 22px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',
+                background:tab===tabKey?'var(--ink-900)':'transparent',
+                color:tab===tabKey?'var(--text-inverse)':'var(--text-muted)',
+                border:'none',transition:'all var(--dur-fast) ease'}}>
               {label}{tabKey==='Library'&&socialPacks.length>0&&<span style={{marginLeft:6,background:'var(--gold-500)',color:'var(--ink-900)',borderRadius:10,padding:'1px 6px',fontSize:10}}>{socialPacks.length}</span>}
             </button>
           )
@@ -99,29 +135,39 @@ export default function SocialPackPage(){
           <motion.div key="build" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} style={{display:'flex',flexDirection:'column',gap:16}}>
             <div className="input-group">
               <label className="input-label">{t('socialTopicLabel')}</label>
-              <input className="input-field" style={{fontSize:16}} placeholder="e.g. Sunday service, Grace, Praise Sunday…" value={topic} onChange={e=>setTopic(e.target.value)}/>
+              <input className="input-field" style={{fontSize:16}} placeholder={t('social.topicPlaceholder')} value={topic} onChange={e=>setTopic(e.target.value)}/>
             </div>
             <div className="grid-2" style={{gap:12}}>
               <div className="input-group">
                 <label className="input-label">{t('socialScriptureLabel')}</label>
-                <input className="input-field" placeholder="e.g. Psalm 118:24" value={scripture} onChange={e=>setScripture(e.target.value)}/>
+                <input className="input-field" placeholder={t('social.scripturePlaceholder')} value={scripture} onChange={e=>setScripture(e.target.value)}/>
               </div>
               <div className="input-group">
                 <label className="input-label">{t('socialChurchLabel')}</label>
-                <input className="input-field" placeholder={user?.church||'Your Church'} value={church} onChange={e=>setChurch(e.target.value)}/>
+                <input className="input-field" placeholder={user?.church || t('social.churchPlaceholder')} value={church} onChange={e=>setChurch(e.target.value)}/>
               </div>
               <div className="input-group">
                 <label className="input-label">{t('socialPlatformLabel')}</label>
-                <select className="select-field" value={platform} onChange={e=>setPlatform(e.target.value)}>{PLATFORMS.map(p=><option key={p}>{p}</option>)}</select>
+                <select className="select-field" value={platform} onChange={e=>setPlatform(e.target.value)}>
+                  {PLATFORMS.map(p => <option key={p.value} value={p.value}>{t(p.labelKey)}</option>)}
+                </select>
               </div>
               <div className="input-group">
                 <label className="input-label">{t('socialToneLabel')}</label>
-                <select className="select-field" value={tone} onChange={e=>setTone(e.target.value)}>{TONES.map(t=><option key={t}>{t}</option>)}</select>
+                <select className="select-field" value={tone} onChange={e=>setTone(e.target.value)}>
+                  {TONES.map(t => <option key={t.value} value={t.value}>{t(t.labelKey)}</option>)}
+                </select>
               </div>
               <div className="input-group" style={{gridColumn:'1/-1'}}>
                 <label className="input-label">{t('socialContentTypeLabel')}</label>
                 <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
-                  {CONTENT_TYPES.map(c=><button key={c} onClick={()=>setContentType(c)} className={`tag ${contentType===c?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 12px',fontSize:12}}>{c}</button>)}
+                  {CONTENT_TYPES.map(c => (
+                    <button key={c.value} onClick={()=>setContentType(c.value)}
+                      className={`tag ${contentType===c.value?'tag-dark':'tag-ink'}`}
+                      style={{cursor:'pointer',padding:'5px 12px',fontSize:12}}>
+                      {t(c.labelKey)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -132,7 +178,7 @@ export default function SocialPackPage(){
             <AnimatePresence>
               {!loading&&pack&&(
                 <motion.div ref={resultRef} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} style={{display:'flex',flexDirection:'column',gap:14}}>
-                  <div className="ai-disclaimer"><span>✦</span><span>{t('aiDisclaimer')}</span></div>
+                  <div className="ai-disclaimer"><span>✦</span><span>{t('disclaimer')}</span></div>
                   {pack.instagram?.length>0&&<PostCard platformName="📸 Instagram" posts={pack.instagram}/>}
                   {pack.whatsapp?.length>0&&<PostCard platformName="💬 WhatsApp Status" posts={pack.whatsapp}/>}
                   {pack.facebook?.length>0&&<PostCard platformName="👥 Facebook" posts={pack.facebook}/>}
@@ -191,7 +237,7 @@ export default function SocialPackPage(){
                     <Icon3D name="globe" tone="gold" active size={17} badgeSize={45}/>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:14,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.title}</div>
-                      <div style={{fontSize:11,color:'var(--text-muted)'}}>{p.contentType} · {p.date}</div>
+                      <div style={{fontSize:11,color:'var(--text-muted)'}}>{t(CONTENT_TYPES.find(c=>c.value===p.contentType)?.labelKey || '')} · {p.date}</div>
                     </div>
                   </motion.div>
                 ))}
