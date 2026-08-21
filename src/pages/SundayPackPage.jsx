@@ -1,3 +1,4 @@
+// src/pages/SundayPackPage.jsx
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Icon3D from '@/components/ui/Icon3D'
@@ -30,7 +31,7 @@ export default function SundayPackPage(){
     setScripture(pendingVerse.ref)
     setTab('Build')
     setPendingVerse(null)
-    showToast(`${pendingVerse.ref} added to Sunday Pack`, '📎')
+    showToast(`${pendingVerse.ref}${t('addedToSundayPackSuffix')}`, '📎')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingVerse])
   const {ask,loading,error}=useAI()
@@ -44,7 +45,7 @@ export default function SundayPackPage(){
       const j=parseJSON(raw)
       if(j){
         setPack(j)
-        showToast('Your Sunday Pack is ready','✓')
+        showToast(t('sundayPackReadyToast'),'✓')
         setTimeout(()=>resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),100)
       } else {
         showToast(t('errorParsing'),'❌')
@@ -95,7 +96,7 @@ export default function SundayPackPage(){
           const label = tabKey === 'Build' ? t('buildTab') || 'Build' : t('libraryTab') || 'Library'
           return (
             <button key={tabKey} onClick={()=>setTab(tabKey)} style={{padding:'7px 22px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',background:tab===tabKey?'var(--ink-900)':'transparent',color:tab===tabKey?'var(--text-inverse)':'var(--text-muted)',border:'none',transition:'all var(--dur-fast) ease'}}>
-              {label}{tabKey==='Library'&&sundayPacks.length>0&&<span style={{marginLeft:6,background:'var(--gold-500)',color:'var(--ink-900)',borderRadius:10,padding:'1px 6px',fontSize:10}}>{sundayPacks.length}</span>}
+              {label}{tabKey==='Library'&&sundayPacks.length>0&&<span style={{marginLeft:6,background:'var(--gold-500)',color:'var(--text-primary)',borderRadius:10,padding:'1px 6px',fontSize:10}}>{sundayPacks.length}</span>}
             </button>
           )
         })}

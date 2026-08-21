@@ -9,7 +9,7 @@ function buildNav(t){
   return [
     {label:'',items:[
       {id:'home',   icon:'home',label:t('navHome')},
-      {id:'agent',  icon:'sparkle',label:t('navAgent')},
+      {id:'agent',  icon:'sparkle',label:t('agentTitle')},
       {id:'bible',  icon:'book',label:t('navBible')},
       {id:'inspire',icon:'sparkle',label:t('navInspire')},
       {id:'search', icon:'search',label:t('navSearch')},
@@ -43,6 +43,9 @@ export default function Sidebar(){
   const NAV = buildNav(t)
   const go=id=>{setActivePage(id);setSidebarOpen(false)}
 
+  // Single point of control: this CSS var drives both the aside's own width
+  // and .main-content's margin-left (see globals.css), so toggling collapse
+  // only needs to touch one variable.
   useEffect(()=>{
     document.documentElement.style.setProperty('--sidebar-w', sidebarCollapsed ? '76px' : '260px')
   },[sidebarCollapsed])
@@ -74,14 +77,14 @@ function Inner({activePage,go,user,NAV,t,collapsed,onToggleCollapse}){
     <div style={{display:'flex',flexDirection:'column',height:'100%',padding:collapsed?'0 6px':'0 10px',overflow:'hidden'}}>
       <div style={{padding:collapsed?'22px 0 16px':'22px 12px 16px',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0,textAlign:collapsed?'center':'left',position:'relative'}}>
         <div style={{display:'flex',alignItems:'center',gap:10,justifyContent:collapsed?'center':'flex-start'}}>
-          <img src="/logo-mark.png" srcSet="/logo-mark.png 1x, /logo-mark@2x.png 2x" alt={t('appName')} width={collapsed?28:32} height={collapsed?28:32} style={{borderRadius:8,flexShrink:0}}/>
-          {!collapsed&&<div style={{fontFamily:'var(--font-serif)',fontSize:22,fontWeight:600,color:'var(--gold-300)',letterSpacing:'-0.01em',lineHeight:1}}>{t('appName')}</div>}
+          <img src="/logo-mark.png" srcSet="/logo-mark.png 1x, /logo-mark@2x.png 2x" alt="Keryva" width={collapsed?28:32} height={collapsed?28:32} style={{borderRadius:8,flexShrink:0}}/>
+          {!collapsed&&<div style={{fontFamily:'var(--font-serif)',fontSize:22,fontWeight:600,color:'var(--gold-300)',letterSpacing:'-0.01em',lineHeight:1}}>Keryva</div>}
         </div>
-        {!collapsed&&<div style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'rgba(250,247,242,0.25)',marginTop:6}}>{t('sidebar.tagline')}</div>}
+        {!collapsed&&<div style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'rgba(250,247,242,0.25)',marginTop:6}}>From Scripture to Service · OmniCraft Studios</div>}
         {onToggleCollapse&&(
-          <button onClick={onToggleCollapse} aria-label={collapsed ? t('sidebar.expandAria') : t('sidebar.collapseAria')}
-            title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-            style={{position:'absolute',top:'50%',right:collapsed?-12:-12,transform:'translateY(-50%)',width:24,height:24,borderRadius:'50%',background:'var(--gold-500)',border:'2px solid var(--ink-900)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--ink-900)',zIndex:5}}>
+          <button onClick={onToggleCollapse} aria-label={collapsed?'Expand sidebar':'Collapse sidebar'}
+            title={collapsed?'Expand sidebar':'Collapse sidebar'}
+            style={{position:'absolute',top:'50%',right:collapsed?-12:-12,transform:'translateY(-50%)',width:24,height:24,borderRadius:'50%',background:'var(--gold-500)',border:'2px solid var(--ink-900)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-primary)',zIndex:5}}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" style={{transform:collapsed?'rotate(180deg)':'none',transition:'transform 0.2s'}}>
               <path d="M15 6l-6 6 6 6"/>
             </svg>
@@ -112,12 +115,12 @@ function Inner({activePage,go,user,NAV,t,collapsed,onToggleCollapse}){
       </nav>
       <div style={{padding:collapsed?'12px 0':'12px 4px',borderTop:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
         <button onClick={()=>go('settings')} title={collapsed?t('settings'):undefined} style={{display:'flex',alignItems:'center',justifyContent:collapsed?'center':'flex-start',gap:collapsed?0:10,padding:collapsed?'8px 0':'10px var(--space-4)',borderRadius:'var(--radius-md)',color:activePage==='settings'?'var(--gold-300)':'rgba(250,247,242,0.52)',background:activePage==='settings'?'rgba(212,168,75,0.12)':'transparent',width:'100%',border:'none',cursor:'pointer',transition:'all var(--dur-fast) ease'}}>
-          <div style={{width:28,height:28,borderRadius:'50%',background:user?.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-700),var(--gold-500))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'var(--ink-900)',flexShrink:0}}>{!user?.photo&&(user?.name||'U').slice(0,2).toUpperCase()}</div>
+          <div style={{width:28,height:28,borderRadius:'50%',background:user?.photo?`url(${user.photo}) center/cover`:'linear-gradient(135deg,var(--gold-700),var(--gold-500))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'var(--text-primary)',flexShrink:0}}>{!user?.photo&&(user?.name||'U').slice(0,2).toUpperCase()}</div>
           {!collapsed&&(
             <>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:500,color:'rgba(250,247,242,0.85)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||t('sidebar.welcome')}</div>
-                <div style={{fontSize:10,color:'rgba(250,247,242,0.33)',textTransform:'capitalize'}}>{user?.type ? t(`settings.type${user.type.charAt(0).toUpperCase() + user.type.slice(1)}`, user.type) : t('sidebar.defaultUserType')}</div>
+                <div style={{fontSize:13,fontWeight:500,color:'rgba(250,247,242,0.85)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Welcome'}</div>
+                <div style={{fontSize:10,color:'rgba(250,247,242,0.33)',textTransform:'capitalize'}}>{user?.type||'believer'}</div>
               </div>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="rgba(250,247,242,0.4)" strokeWidth={1.7}>{GLYPHS.settings}</svg>
             </>

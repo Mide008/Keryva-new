@@ -119,7 +119,7 @@ export default function SpiritualWarfarePage(){
                   </select>
                 </div>
                 <div className="input-group">
-                  <label className="input-label">{t('language')}</label>
+                  <label className="input-label">{t('responseLanguageLabel')}</label>
                   <select className="select-field" value={lang} onChange={e=>setLang(e.target.value)}>
                     {RESPONSE_LANGUAGES.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
                   </select>

@@ -155,7 +155,7 @@ export default function SocialPackPage(){
               <div className="input-group">
                 <label className="input-label">{t('socialToneLabel')}</label>
                 <select className="select-field" value={tone} onChange={e=>setTone(e.target.value)}>
-                  {TONES.map(t => <option key={t.value} value={t.value}>{t(t.labelKey)}</option>)}
+                  {TONES.map(tn => <option key={tn.value} value={tn.value}>{t(tn.labelKey)}</option>)}
                 </select>
               </div>
               <div className="input-group" style={{gridColumn:'1/-1'}}>

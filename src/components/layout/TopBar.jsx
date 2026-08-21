@@ -17,7 +17,6 @@ const TITLE_KEYS = {
   prayer: 'topBar.title_prayer',
   saved: 'topBar.title_saved',
   settings: 'topBar.title_settings',
-  // Add any other pages you might have
   agent: 'topBar.title_agent',
   warfare: 'topBar.title_warfare',
   devotional: 'topBar.title_devotional',

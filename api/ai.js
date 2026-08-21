@@ -18,7 +18,7 @@ async function callClaude(prompt, key) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 4096, messages: [{ role: 'user', content: prompt }] }),
+    body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 4096, messages: [{ role: 'user', content: prompt }] }),
   })
   if (!res.ok) { const e = new Error('claude_failed'); e.status = res.status; throw e }
   const data = await res.json()
@@ -28,6 +28,7 @@ async function callClaude(prompt, key) {
 }
 
 async function callGemini(prompt, key) {
+  // Updated: using gemini-2.0-flash (replaced deprecated gemini-2.0-flash-exp)
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

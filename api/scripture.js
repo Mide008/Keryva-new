@@ -135,7 +135,48 @@ async function tryBibleBrain(apiKey, langKey, book, chapter, verse) {
   }
 }
 
-// ---- 3. Azure Translator (final fallback, English source, always labelled) ----
+// ---- 3. Google Cloud Translation (v2 basic) — covers Yoruba & Igbo, which
+// Azure also supports, but is included here because it's the provider key
+// this project actually has configured (GOOGLE_TRANSLATE_API_KEY). Tried
+// before Azure so an existing Azure key (if ever added) still works as a
+// secondary fallback. Nigerian Pidgin isn't a standard Cloud Translation
+// target language, so this (like Azure) yields nothing for PCM — that's
+// expected, not a bug; PCM only ever gets an authorised Bible edition.
+const GOOGLE_LANG_CODE = { YOR: 'yo', IBO: 'ig' }
+
+async function tryGoogleTranslate(book, chapter, verse, englishVerses, langKey) {
+  const key = process.env.GOOGLE_TRANSLATE_API_KEY
+  const googleLang = GOOGLE_LANG_CODE[langKey]
+  if (!key || !googleLang || !englishVerses?.length) return null
+  const toTranslate = verse ? englishVerses.filter(v => v.v === Number(verse)) : englishVerses
+  if (!toTranslate.length) return null
+  try {
+    const res = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: toTranslate.map(v => v.text), source: 'en', target: googleLang, format: 'text' }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const translations = data?.data?.translations || []
+    if (!translations.length) return null
+    const verses = toTranslate.map((v, i) => ({ v: v.v, text: translations[i]?.translatedText || v.text }))
+    return {
+      verses,
+      text: verse ? verses[0]?.text : undefined,
+      source: 'google-translate',
+      machineTranslated: true,
+      sourceLanguage: 'en',
+      sourceTranslation: 'WEB',
+      translationName: `Automatically translated (English WEB \u2192 ${LANGUAGES[langKey].label})`,
+      copyright: 'Machine translation \u2014 Google Cloud Translation',
+    }
+  } catch {
+    return null
+  }
+}
+
+// ---- 4. Azure Translator (final fallback, English source, always labelled) ----
 async function tryAzure(book, chapter, verse, englishVerses, langKey) {
   const key = process.env.AZURE_TRANSLATOR_KEY
   const region = process.env.AZURE_TRANSLATOR_REGION
@@ -195,19 +236,20 @@ export default async function handler(req, res) {
     let result = await tryApiBible(process.env.BIBLE_API_KEY, langKey, book, chapter, verse).catch(() => null)
     // 2. Bible Brain
     if (!result) result = await tryBibleBrain(process.env.BIBLE_BRAIN_API_KEY, langKey, book, chapter, verse)
-    // 3. Azure Translator — only if pcm is NOT the target (Azure has no
-    // Pidgin support) and neither Scripture provider had this language.
+    // 3. Google Translate, then 4. Azure Translator — neither has Pidgin
+    // coverage, so PCM only ever reaches an authorised edition above.
     if (!result && langKey !== 'PCM') {
       const englishVerses = await fetchEnglishSource(book, chapter)
-      result = await tryAzure(book, chapter, verse, englishVerses, langKey)
+      result = await tryGoogleTranslate(book, chapter, verse, englishVerses, langKey)
+      if (!result) result = await tryAzure(book, chapter, verse, englishVerses, langKey)
     }
 
     if (!result) {
       res.status(404).json({
         error: `No ${LANGUAGES[langKey].label} text available for ${book} ${chapter} from any source yet.`,
         note: langKey === 'PCM'
-          ? 'Nigerian Pidgin has no Azure fallback by design (not supported) — only an authorised pcm Bible edition will display here.'
-          : 'Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, or AZURE_TRANSLATOR_KEY (+ AZURE_TRANSLATOR_REGION) to enable this chain.',
+          ? 'Nigerian Pidgin has no machine-translation fallback by design (Google Translate and Azure don\u2019t support it) — only an authorised pcm Bible edition will display here.'
+          : 'Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, or AZURE_TRANSLATOR_KEY (+ AZURE_TRANSLATOR_REGION) to enable this chain.',
       })
       return
     }
