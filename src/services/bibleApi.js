@@ -122,14 +122,17 @@ async function fetchFromESVProxy(bookName, chapter) {
 const NEEDS_BIBLE_VERSION_PROXY = new Set(['NIV','NLT','AMP','MSG','NASB','CSB','NKJV','NCV','GNT','NRSV','TLB'])
 
 // Yoruba/Igbo/Pidgin/French/Spanish go through the full fallback-chain
-// orchestrator (API.Bible -> Bible Brain -> Google Translate -> Azure
-// Translator) instead of the single-provider proxy above, since these need
-// the extra fallback and the honest machine-translation labelling the
-// chain provides. French and Spanish use FRE/SPA codes (matching this
-// app's UI-language convention) even though the chain's language key
-// internally is the same string.
+// orchestrator (API.Bible -> Bible Brain -> Google Translate -> DeepL -> MyMemory)
+// instead of the single-provider proxy above, since these need the extra
+// fallback and the honest machine-translation labelling the chain provides.
 const NATIVE_LANGUAGE_CODES = { YOR: 'YOR', IBO: 'IBO', PCM: 'PCM', FRE: 'FRE', SPA: 'SPA' }
-const NATIVE_LANGUAGE_LABELS = { YOR: 'Yoruba', IBO: 'Igbo', PCM: 'Pidgin', FRE: 'French', SPA: 'Spanish' }
+const NATIVE_LANGUAGE_LABELS = {
+  YOR: 'Yoruba',
+  IBO: 'Igbo',
+  PCM: 'Pidgin',
+  FRE: 'French',
+  SPA: 'Spanish',
+}
 
 async function fetchFromScriptureService(bookName, chapter, translationCode) {
   const langKey = NATIVE_LANGUAGE_CODES[translationCode]
@@ -174,25 +177,26 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
     }
   }
 
-  // Yoruba, Igbo, Nigerian Pidgin — full fallback chain (API.Bible -> Bible
-  // Brain -> Azure Translator as last resort). Never falls back to KJV
-  // silently: if nothing is available, we say so plainly rather than
-  // showing an English verse under a Yoruba/Igbo label.
+  // Yoruba, Igbo, Nigerian Pidgin, French, Spanish — full fallback chain
+  // (API.Bible -> Bible Brain -> Google Translate -> DeepL -> MyMemory).
+  // Never falls back to KJV silently: if nothing is available, we say so
+  // plainly rather than showing an English verse under a native-language label.
   if (NATIVE_LANGUAGE_CODES[translationCode]) {
     try {
       const data = await fetchFromScriptureService(bookName, chapter, translationCode)
+      const label = NATIVE_LANGUAGE_LABELS[translationCode] || translationCode
       const result = {
         verses: data.verses,
         source: data.source,
         note: data.machineTranslated
-          ? `Automatically translated from the English World English Bible \u2014 this may differ from an officially published ${NATIVE_LANGUAGE_LABELS[translationCode] || translationCode} Bible.`
+          ? `Automatically translated from the English World English Bible — this may differ from an officially published ${label} Bible.`
           : undefined,
       }
       cacheSet(cacheKey, result)
       return result
     } catch (err) {
       console.warn(`Scripture service unavailable for ${translationCode}:`, err.message)
-      return { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, or AZURE_TRANSLATOR_KEY in your Vercel project to enable this.` }
+      return { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, DEEPL_API_KEY, or MYMEMORY_EMAIL in your Vercel project to enable this.` }
     }
   }
 
