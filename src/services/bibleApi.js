@@ -121,11 +121,15 @@ async function fetchFromESVProxy(bookName, chapter) {
 // bible-api.com's free catalog is public-domain only.
 const NEEDS_BIBLE_VERSION_PROXY = new Set(['NIV','NLT','AMP','MSG','NASB','CSB','NKJV','NCV','GNT','NRSV','TLB'])
 
-// Yoruba/Igbo/Pidgin go through the full fallback-chain orchestrator
-// (API.Bible -> Bible Brain -> Azure Translator) instead of the
-// single-provider proxy above, since these need the extra fallback and the
-// honest machine-translation labelling the chain provides.
-const NATIVE_LANGUAGE_CODES = { YOR: 'YOR', IBO: 'IBO', PCM: 'PCM' }
+// Yoruba/Igbo/Pidgin/French/Spanish go through the full fallback-chain
+// orchestrator (API.Bible -> Bible Brain -> Google Translate -> Azure
+// Translator) instead of the single-provider proxy above, since these need
+// the extra fallback and the honest machine-translation labelling the
+// chain provides. French and Spanish use FRE/SPA codes (matching this
+// app's UI-language convention) even though the chain's language key
+// internally is the same string.
+const NATIVE_LANGUAGE_CODES = { YOR: 'YOR', IBO: 'IBO', PCM: 'PCM', FRE: 'FRE', SPA: 'SPA' }
+const NATIVE_LANGUAGE_LABELS = { YOR: 'Yoruba', IBO: 'Igbo', PCM: 'Pidgin', FRE: 'French', SPA: 'Spanish' }
 
 async function fetchFromScriptureService(bookName, chapter, translationCode) {
   const langKey = NATIVE_LANGUAGE_CODES[translationCode]
@@ -181,7 +185,7 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
         verses: data.verses,
         source: data.source,
         note: data.machineTranslated
-          ? `Automatically translated from the English World English Bible \u2014 this may differ from an officially published ${translationCode === 'YOR' ? 'Yoruba' : translationCode === 'IBO' ? 'Igbo' : 'Pidgin'} Bible.`
+          ? `Automatically translated from the English World English Bible \u2014 this may differ from an officially published ${NATIVE_LANGUAGE_LABELS[translationCode] || translationCode} Bible.`
           : undefined,
       }
       cacheSet(cacheKey, result)

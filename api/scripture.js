@@ -45,12 +45,14 @@ const LANGUAGES = {
   YOR: { apiBibleLang: 'yor', bibleBrainLang: 'YOR', label: 'Yoruba' },
   IBO: { apiBibleLang: 'ibo', bibleBrainLang: 'IBO', label: 'Igbo' },
   PCM: { apiBibleLang: 'pcm', bibleBrainLang: 'PCM', label: 'Nigerian Pidgin' },
+  FRE: { apiBibleLang: 'fra', bibleBrainLang: 'FRN', label: 'French' },
+  SPA: { apiBibleLang: 'spa', bibleBrainLang: 'SPN', label: 'Spanish' },
 }
 
 // Azure Translator language codes — Azure does NOT support Nigerian Pidgin,
 // so pcm is deliberately absent here; the chain falls through to English
 // for Pidgin rather than mistranslating with Azure.
-const AZURE_LANG_CODE = { YOR: 'yo', IBO: 'ig' }
+const AZURE_LANG_CODE = { YOR: 'yo', IBO: 'ig', FRE: 'fr', SPA: 'es' }
 
 const memCache = new Map() // key -> { data, cachedAt } — process-lifetime only.
 // A real cross-request cache needs Supabase/Redis (not yet provisioned);
@@ -142,7 +144,7 @@ async function tryBibleBrain(apiKey, langKey, book, chapter, verse) {
 // secondary fallback. Nigerian Pidgin isn't a standard Cloud Translation
 // target language, so this (like Azure) yields nothing for PCM — that's
 // expected, not a bug; PCM only ever gets an authorised Bible edition.
-const GOOGLE_LANG_CODE = { YOR: 'yo', IBO: 'ig' }
+const GOOGLE_LANG_CODE = { YOR: 'yo', IBO: 'ig', FRE: 'fr', SPA: 'es' }
 
 async function tryGoogleTranslate(book, chapter, verse, englishVerses, langKey) {
   const key = process.env.GOOGLE_TRANSLATE_API_KEY
