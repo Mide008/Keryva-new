@@ -116,12 +116,12 @@ export default function BiblePage(){
     if(!selected)return
     setAiType(type);setAiResult(null)
     const ref=`${book?.name} ${ch}:${selected.v}`
-    let prompt
-    if(type==='explain')prompt=VERSE_PROMPTS.explain(ref,selected.text)
-    else if(type==='preach')prompt=VERSE_PROMPTS.preachingAngle(ref,selected.text)
-    else if(type==='counsel')prompt=VERSE_PROMPTS.counsellingAngle(ref,selected.text)
-    else if(type==='youth')prompt=VERSE_PROMPTS.youthExplanation(ref,selected.text)
-    if(prompt){const r=await ask(prompt,'fast');if(r)setAiResult(r)}
+    let aiPrompt
+    if(type==='explain')aiPrompt=VERSE_PROMPTS.explain(ref,selected.text)
+    else if(type==='preach')aiPrompt=VERSE_PROMPTS.preachingAngle(ref,selected.text)
+    else if(type==='counsel')aiPrompt=VERSE_PROMPTS.counsellingAngle(ref,selected.text)
+    else if(type==='youth')aiPrompt=VERSE_PROMPTS.youthExplanation(ref,selected.text)
+    if(aiPrompt){const r=await ask(aiPrompt,'fast');if(r)setAiResult(r)}
   }
 
   const doAction=(type)=>{
@@ -130,11 +130,11 @@ export default function BiblePage(){
     if(type==='save'){saveVerse({ref,translation:tran,text:selected.text,collection:'General'})}
     else if(type==='copy'){navigator.clipboard.writeText(`${selected.text} — ${ref} (${tran})`).catch(()=>{});showToast(t('copied'),'📋')}
     else if(type==='share'){const m=`*${ref}* (${tran})\n\n_${selected.text}_\n\n— Keryva · OmniCraft Studios 📖`;window.open(`https://wa.me/?text=${encodeURIComponent(m)}`,'_blank');showToast(t('shareToWhatsApp'),'💬')}
-    else if(type==='addSermon'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sermon');showToast(t('verseReadySermon') || 'Verse ready for sermon','🎙')}
-    else if(type==='addPrayer'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('prayer');showToast(t('verseReadyPrayer') || 'Verse ready for prayer','🙏')}
-    else if(type==='addStudy'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('study');showToast(t('verseReadyStudy') || 'Verse ready for study guide','📚')}
-    else if(type==='addSunday'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sunday');showToast(t('verseReadySunday') || 'Verse ready for Sunday Pack','📋')}
-    else if(type==='note'){const n=prompt(`Note for ${ref}:`);if(n)addVerseNote(ref,selected.text,n,null)}
+    else if(type==='addSermon'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sermon');showToast(t('verseReadySermon'),'🎙')}
+    else if(type==='addPrayer'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('prayer');showToast(t('verseReadyPrayer'),'🙏')}
+    else if(type==='addStudy'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('study');showToast(t('verseReadyStudy'),'📚')}
+    else if(type==='addSunday'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sunday');showToast(t('verseReadySunday'),'📋')}
+    else if(type==='note'){const n=window.prompt(`${t('noteForPrefix')} ${ref}:`);if(n)addVerseNote(ref,selected.text,n,null)}
     closeAction()
   }
 
@@ -146,24 +146,24 @@ export default function BiblePage(){
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <div style={{position:'relative',flex:1}}>
                 <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontSize:15,pointerEvents:'none'}}>🔍</span>
-                <input className="input-field" style={{paddingLeft:36}} placeholder="Search books, or type a reference like Gen 3 / John 3:16" value={bSearch} onChange={e=>setBSearch(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&jumpMatch)jumpToReference()}}/>
+                <input className="input-field" style={{paddingLeft:36}} placeholder={t('searchBooksPlaceholder')} value={bSearch} onChange={e=>setBSearch(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&jumpMatch)jumpToReference()}}/>
               </div>
               <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>setTran(e.target.value)}>
-                {TRANSLATIONS.map(t=><option key={t.code} value={t.code}>{t.code}</option>)}
+                {TRANSLATIONS.map(tr=><option key={tr.code} value={tr.code}>{tr.code}</option>)}
               </select>
             </div>
             {jumpMatch&&(
               <motion.button initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} onClick={jumpToReference}
                 style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',borderRadius:12,background:'var(--ink-900)',color:'var(--text-inverse)',border:'none',cursor:'pointer',width:'100%'}}>
-                <span style={{fontSize:14,fontWeight:500}}>Go to {jumpMatch.book.name} {jumpMatch.chapter}{jumpMatch.verse?`:${jumpMatch.verse}`:''}</span>
-                <span style={{fontSize:13,opacity:0.7}}>Press Enter →</span>
+                <span style={{fontSize:14,fontWeight:500}}>{t('goToLabel')} {jumpMatch.book.name} {jumpMatch.chapter}{jumpMatch.verse?`:${jumpMatch.verse}`:''}</span>
+                <span style={{fontSize:13,opacity:0.7}}>{t('pressEnterLabel')}</span>
               </motion.button>
             )}
             <div style={{padding:'10px 14px',background:'var(--gold-50)',border:'1px solid var(--border-gold)',borderRadius:10,fontSize:12,color:'var(--gold-800)'}}>
-              <strong>{TRANSLATIONS.find(t=>t.code===tran)?.name}</strong> — {TRANSLATIONS.find(t=>t.code===tran)?.notes}
+              <strong>{TRANSLATIONS.find(tr=>tr.code===tran)?.name}</strong> — {TRANSLATIONS.find(tr=>tr.code===tran)?.notes}
             </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-              {TRANSLATIONS.map(t=><button key={t.code} title={t.name} onClick={()=>setTran(t.code)} className={`tag ${tran===t.code?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 10px',fontSize:11,fontWeight:tran===t.code?600:400}}>{t.code}</button>)}
+              {TRANSLATIONS.map(tr=><button key={tr.code} title={tr.name} onClick={()=>setTran(tr.code)} className={`tag ${tran===tr.code?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 10px',fontSize:11,fontWeight:tran===tr.code?600:400}}>{tr.code}</button>)}
             </div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {['All','OT','NT'].map(tst=>{
@@ -224,7 +224,7 @@ export default function BiblePage(){
                 <div style={{fontSize:12,color:'var(--text-muted)'}}>{t('chapter')} {ch}</div>
               </div>
               <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>setTran(e.target.value)}>
-                {TRANSLATIONS.map(t=><option key={t.code} value={t.code}>{t.code}</option>)}
+                {TRANSLATIONS.map(tr=><option key={tr.code} value={tr.code}>{tr.code}</option>)}
               </select>
             </div>
 
@@ -237,7 +237,7 @@ export default function BiblePage(){
               {chapterLoading&&(
                 <div style={{textAlign:'center',padding:40}}>
                   <div className="loading-dots"><div className="loading-dot"/><div className="loading-dot"/><div className="loading-dot"/></div>
-                  <p style={{fontSize:13,color:'var(--text-muted)',marginTop:12}}>Loading {book.name} {ch}…</p>
+                  <p style={{fontSize:13,color:'var(--text-muted)',marginTop:12}}>{t('loadingChapterLabel')} {book.name} {ch}…</p>
                 </div>
               )}
               {!chapterLoading&&verses.map(v=>(
