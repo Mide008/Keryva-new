@@ -97,6 +97,9 @@ const HUMAN_MESSAGES = {
 }
 
 export default async function handler(req, res) {
+  // Diagnostic check to verify environment key injection in Vercel logs
+  console.log("KEY CHECK -> GROQ present:", !!process.env.GROQ_API_KEY, "GEMINI present:", !!process.env.GEMINI_API_KEY);
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
