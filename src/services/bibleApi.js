@@ -16,31 +16,57 @@ const BIBLE_API_MAP = {
 
 import { idbGet, idbSet } from '@/lib/idb'
 
-const CACHE_PREFIX = 'rhema_bible_cache_'
+// ----- CACHE CONFIGURATION -----
+const CACHE_VERSION = 2                     // <-- Bump this to invalidate all old caches
+const CACHE_PREFIX = `rhema_bible_cache_v${CACHE_VERSION}_`
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days – Bible text rarely changes
 const memCache = new Map()
 
 function cacheGet(key) {
   if (memCache.has(key)) return memCache.get(key)
   try {
     const raw = localStorage.getItem(CACHE_PREFIX + key)
-    if (raw) { const v = JSON.parse(raw); memCache.set(key, v); return v }
+    if (raw) {
+      const entry = JSON.parse(raw)
+      // Check expiry
+      if (entry.timestamp && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+        memCache.set(key, entry.data)
+        return entry.data
+      } else {
+        // Expired – remove it
+        localStorage.removeItem(CACHE_PREFIX + key)
+      }
+    }
   } catch {}
   return null
 }
+
 async function cacheGetAsync(key) {
   const hit = cacheGet(key)
   if (hit) return hit
   // localStorage missed (quota eviction, cleared, etc) — fall back to the
   // larger-capacity IndexedDB store so already-read chapters still work offline.
   const idbHit = await idbGet(CACHE_PREFIX + key)
-  if (idbHit) { memCache.set(key, idbHit); return idbHit }
+  if (idbHit) {
+    // Check expiry
+    if (idbHit.timestamp && Date.now() - idbHit.timestamp < CACHE_TTL_MS) {
+      memCache.set(key, idbHit.data)
+      return idbHit.data
+    } else {
+      // Expired – remove it
+      await idbSet(CACHE_PREFIX + key, null)
+    }
+  }
   return null
 }
+
 function cacheSet(key, value) {
+  const entry = { data: value, timestamp: Date.now() }
   memCache.set(key, value)
-  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(value)) } catch {}
-  idbSet(CACHE_PREFIX + key, value).catch(() => {})
+  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry)) } catch {}
+  idbSet(CACHE_PREFIX + key, entry).catch(() => {})
 }
+// ----- END CACHE CONFIG -----
 
 /**
  * Verify a single scripture reference the AI returned (e.g. "Hebrews 11:1" or
@@ -62,11 +88,14 @@ export async function verifyReference(reference, translationCode = 'KJV') {
     const res = await fetch(url)
     if (!res.ok) {
       const result = { verified: false, reason: `Reference not found (${res.status})` }
+      cacheSet(cacheKey, result)
       return result
     }
     const data = await res.json()
     if (!data?.text || !data?.verses?.length) {
-      return { verified: false, reason: 'Empty response — likely an invented or malformed reference' }
+      const result = { verified: false, reason: 'Empty response — likely an invented or malformed reference' }
+      cacheSet(cacheKey, result)
+      return result
     }
     const result = {
       verified: true,
@@ -196,7 +225,9 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
       return result
     } catch (err) {
       console.warn(`Scripture service unavailable for ${translationCode}:`, err.message)
-      return { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, DEEPL_API_KEY, or MYMEMORY_EMAIL in your Vercel project to enable this.` }
+      const errorResult = { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, DEEPL_API_KEY, or MYMEMORY_EMAIL in your Vercel project to enable this.` }
+      cacheSet(cacheKey, errorResult) // Cache the error result to avoid repeated failing requests
+      return errorResult
     }
   }
 
@@ -225,6 +256,8 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
     return result
   } catch (err) {
     console.error('bible-api.com failed:', err.message)
-    return { verses: [], source: 'error', note: 'Could not load this chapter. Check your connection and try again.' }
+    const errorResult = { verses: [], source: 'error', note: 'Could not load this chapter. Check your connection and try again.' }
+    cacheSet(cacheKey, errorResult)
+    return errorResult
   }
 }
