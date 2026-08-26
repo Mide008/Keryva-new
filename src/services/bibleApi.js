@@ -16,57 +16,48 @@ const BIBLE_API_MAP = {
 
 import { idbGet, idbSet } from '@/lib/idb'
 
-// ----- CACHE CONFIGURATION -----
-const CACHE_VERSION = 2                     // <-- Bump this to invalidate all old caches
-const CACHE_PREFIX = `rhema_bible_cache_v${CACHE_VERSION}_`
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days – Bible text rarely changes
+// v3 — bumped deliberately. Every earlier version of this cache (v1, v2,
+// unversioned) could hold a permanently-stuck "no result yet" entry from
+// before the native-language fallback chain existed or worked correctly —
+// bumping the prefix means those stale entries are never read again, only
+// ever overwritten by a fresh fetch. Bump this again any time the shape of
+// what fetchChapter() returns changes, or if native-language results seem
+// "stuck" after a real server-side fix.
+const CACHE_PREFIX = 'rhema_bible_cache_v3_'
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h — matches the server's own TTL
 const memCache = new Map()
 
 function cacheGet(key) {
-  if (memCache.has(key)) return memCache.get(key)
+  if (memCache.has(key)) {
+    const v = memCache.get(key)
+    if (v && Date.now() - (v.__cachedAt || 0) < CACHE_TTL_MS) return v.data
+    memCache.delete(key)
+  }
   try {
     const raw = localStorage.getItem(CACHE_PREFIX + key)
     if (raw) {
-      const entry = JSON.parse(raw)
-      // Check expiry
-      if (entry.timestamp && Date.now() - entry.timestamp < CACHE_TTL_MS) {
-        memCache.set(key, entry.data)
-        return entry.data
-      } else {
-        // Expired – remove it
-        localStorage.removeItem(CACHE_PREFIX + key)
-      }
+      const v = JSON.parse(raw)
+      if (v && Date.now() - (v.__cachedAt || 0) < CACHE_TTL_MS) { memCache.set(key, v); return v.data }
+      localStorage.removeItem(CACHE_PREFIX + key)
     }
   } catch {}
   return null
 }
-
 async function cacheGetAsync(key) {
   const hit = cacheGet(key)
   if (hit) return hit
   // localStorage missed (quota eviction, cleared, etc) — fall back to the
   // larger-capacity IndexedDB store so already-read chapters still work offline.
   const idbHit = await idbGet(CACHE_PREFIX + key)
-  if (idbHit) {
-    // Check expiry
-    if (idbHit.timestamp && Date.now() - idbHit.timestamp < CACHE_TTL_MS) {
-      memCache.set(key, idbHit.data)
-      return idbHit.data
-    } else {
-      // Expired – remove it
-      await idbSet(CACHE_PREFIX + key, null)
-    }
-  }
+  if (idbHit && Date.now() - (idbHit.__cachedAt || 0) < CACHE_TTL_MS) { memCache.set(key, idbHit); return idbHit.data }
   return null
 }
-
 function cacheSet(key, value) {
-  const entry = { data: value, timestamp: Date.now() }
-  memCache.set(key, value)
-  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry)) } catch {}
-  idbSet(CACHE_PREFIX + key, entry).catch(() => {})
+  const wrapped = { data: value, __cachedAt: Date.now() }
+  memCache.set(key, wrapped)
+  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(wrapped)) } catch {}
+  idbSet(CACHE_PREFIX + key, wrapped).catch(() => {})
 }
-// ----- END CACHE CONFIG -----
 
 /**
  * Verify a single scripture reference the AI returned (e.g. "Hebrews 11:1" or
@@ -88,14 +79,11 @@ export async function verifyReference(reference, translationCode = 'KJV') {
     const res = await fetch(url)
     if (!res.ok) {
       const result = { verified: false, reason: `Reference not found (${res.status})` }
-      cacheSet(cacheKey, result)
       return result
     }
     const data = await res.json()
     if (!data?.text || !data?.verses?.length) {
-      const result = { verified: false, reason: 'Empty response — likely an invented or malformed reference' }
-      cacheSet(cacheKey, result)
-      return result
+      return { verified: false, reason: 'Empty response — likely an invented or malformed reference' }
     }
     const result = {
       verified: true,
@@ -151,17 +139,14 @@ async function fetchFromESVProxy(bookName, chapter) {
 const NEEDS_BIBLE_VERSION_PROXY = new Set(['NIV','NLT','AMP','MSG','NASB','CSB','NKJV','NCV','GNT','NRSV','TLB'])
 
 // Yoruba/Igbo/Pidgin/French/Spanish go through the full fallback-chain
-// orchestrator (API.Bible -> Bible Brain -> Google Translate -> DeepL -> MyMemory)
-// instead of the single-provider proxy above, since these need the extra
-// fallback and the honest machine-translation labelling the chain provides.
+// orchestrator (API.Bible -> Bible Brain -> Google Translate -> Azure
+// Translator) instead of the single-provider proxy above, since these need
+// the extra fallback and the honest machine-translation labelling the
+// chain provides. French and Spanish use FRE/SPA codes (matching this
+// app's UI-language convention) even though the chain's language key
+// internally is the same string.
 const NATIVE_LANGUAGE_CODES = { YOR: 'YOR', IBO: 'IBO', PCM: 'PCM', FRE: 'FRE', SPA: 'SPA' }
-const NATIVE_LANGUAGE_LABELS = {
-  YOR: 'Yoruba',
-  IBO: 'Igbo',
-  PCM: 'Pidgin',
-  FRE: 'French',
-  SPA: 'Spanish',
-}
+const NATIVE_LANGUAGE_LABELS = { YOR: 'Yoruba', IBO: 'Igbo', PCM: 'Pidgin', FRE: 'French', SPA: 'Spanish' }
 
 async function fetchFromScriptureService(bookName, chapter, translationCode) {
   const langKey = NATIVE_LANGUAGE_CODES[translationCode]
@@ -206,28 +191,25 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
     }
   }
 
-  // Yoruba, Igbo, Nigerian Pidgin, French, Spanish — full fallback chain
-  // (API.Bible -> Bible Brain -> Google Translate -> DeepL -> MyMemory).
-  // Never falls back to KJV silently: if nothing is available, we say so
-  // plainly rather than showing an English verse under a native-language label.
+  // Yoruba, Igbo, Nigerian Pidgin — full fallback chain (API.Bible -> Bible
+  // Brain -> Azure Translator as last resort). Never falls back to KJV
+  // silently: if nothing is available, we say so plainly rather than
+  // showing an English verse under a Yoruba/Igbo label.
   if (NATIVE_LANGUAGE_CODES[translationCode]) {
     try {
       const data = await fetchFromScriptureService(bookName, chapter, translationCode)
-      const label = NATIVE_LANGUAGE_LABELS[translationCode] || translationCode
       const result = {
         verses: data.verses,
         source: data.source,
         note: data.machineTranslated
-          ? `Automatically translated from the English World English Bible — this may differ from an officially published ${label} Bible.`
+          ? `Automatically translated from the English World English Bible \u2014 this may differ from an officially published ${NATIVE_LANGUAGE_LABELS[translationCode] || translationCode} Bible.`
           : undefined,
       }
       cacheSet(cacheKey, result)
       return result
     } catch (err) {
       console.warn(`Scripture service unavailable for ${translationCode}:`, err.message)
-      const errorResult = { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, DEEPL_API_KEY, or MYMEMORY_EMAIL in your Vercel project to enable this.` }
-      cacheSet(cacheKey, errorResult) // Cache the error result to avoid repeated failing requests
-      return errorResult
+      return { verses: [], source: 'error', note: `No ${translationCode} edition is available yet from any configured source. Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, or AZURE_TRANSLATOR_KEY in your Vercel project to enable this.` }
     }
   }
 
@@ -256,8 +238,6 @@ export async function fetchChapter(bookName, chapter, translationCode = 'KJV') {
     return result
   } catch (err) {
     console.error('bible-api.com failed:', err.message)
-    const errorResult = { verses: [], source: 'error', note: 'Could not load this chapter. Check your connection and try again.' }
-    cacheSet(cacheKey, errorResult)
-    return errorResult
+    return { verses: [], source: 'error', note: 'Could not load this chapter. Check your connection and try again.' }
   }
 }
