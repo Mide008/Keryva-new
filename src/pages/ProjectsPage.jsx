@@ -87,13 +87,14 @@ export default function ProjectsPage() {
                             background: stackColors[si % stackColors.length], borderRadius: 10,
                             border: '1px solid var(--border-subtle)', boxShadow: '0 4px 10px rgba(28,23,16,0.06)',
                             transform: `rotate(${(si - 1) * 7}deg)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+                            overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '0 4px',
                           }}>{t(src.labelKey).split(' ')[0]}</div>
                         ))}
                         {/* Folder base */}
                         <div style={{
                           position: 'absolute', bottom: 0, left: 0, right: 0, height: 92, background: 'var(--bg-card)',
                           border: '1px solid var(--border-subtle)', borderRadius: 16, boxShadow: '0 6px 18px rgba(28,23,16,0.08)',
-                          display: 'flex', alignItems: 'flex-end', padding: 10,
+                          display: 'flex', alignItems: 'flex-end', padding: 10, overflow: 'hidden',
                         }}>
                           {/* Type icons, bottom-left — stands in for the reference's collaborator avatars */}
                           <div style={{ display: 'flex' }}>
@@ -102,6 +103,7 @@ export default function ProjectsPage() {
                                 width: 24, height: 24, borderRadius: '50%', background: 'var(--gold-100)',
                                 border: '2px solid var(--bg-card)', marginLeft: si === 0 ? 0 : -8,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
+                                overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
                               }}>{t(src.labelKey).split(' ')[0]}</div>
                             ))}
                             {items.length === 0 && <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{t('projects.emptyFolder')}</span>}
@@ -112,6 +114,7 @@ export default function ProjectsPage() {
                           position: 'absolute', top: -6, right: -6, width: 34, height: 34, borderRadius: 9,
                           background: 'var(--gold-400)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 16, boxShadow: '0 4px 10px rgba(28,23,16,0.15)', transform: 'rotate(8deg)',
+                          overflow: 'hidden', whiteSpace: 'nowrap',
                         }}>{t(dominant.labelKey).split(' ')[0]}</div>
                         {/* Delete */}
                         <button onClick={async (e) => { e.stopPropagation(); if (await confirmAction(t('projects.deleteConfirm'), { tone: 'danger', confirmLabel: t('delete') })) deleteProject(p.id) }}

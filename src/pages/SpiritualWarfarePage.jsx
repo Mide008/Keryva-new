@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext'
 import { useAI } from '@/lib/useAI'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAIServices, RESPONSE_LANGUAGES } from '@/lib/aiServices'
-import { TRANSLATIONS } from '@/lib/bibleData'
+import { TRANSLATIONS, dailyBackgroundImage } from '@/lib/bibleData'
 import { RevealCard, MagneticBtn, MotionHeadline } from '@/components/ui/MotionComponents'
 import EmptyState from '@/components/ui/EmptyState'
 import VerifiedBadge from '@/components/ui/VerifiedBadge'
@@ -68,6 +68,7 @@ export default function SpiritualWarfarePage(){
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
       <RevealCard>
         <div style={{ borderRadius:24, overflow:'hidden', position:'relative', background:'var(--ink-900)', padding:28 }}>
+          <img src={dailyBackgroundImage('warfare',900,600)} alt="" aria-hidden="true" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.07}}/>
           <div style={{ position:'absolute', top:-40, right:-40, width:220, height:220, background:'radial-gradient(circle,rgba(212,168,75,0.18) 0%,transparent 70%)' }}/>
           <div style={{ fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gold-300)', marginBottom:8 }}>{t('warfare.engineTag')}</div>
           <MotionHeadline text={t('warfare.headline')} as="h1" style={{ fontFamily:'var(--font-serif)', fontSize:'clamp(20px,3vw,30px)', fontWeight:400, color:'rgba(250,247,242,0.95)', lineHeight:1.2 }}/>

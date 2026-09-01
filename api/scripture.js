@@ -1,28 +1,17 @@
-// api/scripture.js — Vercel Serverless Function (Node runtime, default)
+// api/scripture.js — Vercel Serverless Function (Node runtime)
+// Orchestrates the fallback chain for native-language Scripture:
+//   1. API.Bible   — authorised editions
+//   2. Bible Brain — Faith Comes By Hearing's catalogue
+//   3. Google Translate — machine translation (supports Yoruba, Igbo, French, Spanish)
+//   4. DeepL       — machine translation (French, Spanish only)
+//   5. MyMemory    — final fallback (free, no billing required)
 //
-// Orchestrates the recommended fallback chain for native-language Scripture:
-//   1. API.Bible   — check for an authorised edition in the requested language
-//   2. Bible Brain  — check Faith Comes By Hearing's catalog (broader
-//      language coverage, especially for African languages)
-//   3. Azure Translator — LAST resort only: translate the English verse and
-//      clearly label the result as machine-translated
-//
-// This endpoint is ONLY used for languages that need this chain (Yoruba,
-// Igbo, Nigerian Pidgin today). English and the existing commercial
-// translations continue to go through api/bible-version.js and
-// src/services/bibleApi.js's existing bible-api.com path — untouched.
-//
-// Every response carries { source, machineTranslated, copyright } so the
-// client can render an honest "Automatically translated" notice when (and
-// only when) that's actually what happened. Never silently present
-// machine-translated text as an official Bible edition.
+// Every response includes { source, machineTranslated, copyright } so the
+// client can render an honest notice when machine‑translated text is used.
 
 const API_BIBLE_BASE = 'https://api.scripture.api.bible/v1'
 const BIBLE_BRAIN_BASE = 'https://4.dbt.io/api'
 
-// USFM 3-letter book codes (stable public standard) — same mapping used in
-// api/bible-version.js, duplicated here since this file is intentionally
-// self-contained (mirrors the no-cross-import pattern in api/mcp.js).
 const USFM = {
   'Genesis':'GEN','Exodus':'EXO','Leviticus':'LEV','Numbers':'NUM','Deuteronomy':'DEU',
   'Joshua':'JOS','Judges':'JDG','Ruth':'RUT','1 Samuel':'1SA','2 Samuel':'2SA',
@@ -39,25 +28,17 @@ const USFM = {
   '2 Peter':'2PE','1 John':'1JN','2 John':'2JN','3 John':'3JN','Jude':'JUD','Revelation':'REV',
 }
 
-// Our language keys -> ISO 639-3 (api.bible) and Bible Brain's own language
-// name/code conventions. Nigerian Pidgin's ISO 639-3 code is 'pcm'.
+// Language mapping: keys -> ISO codes for API.Bible, Bible Brain, Google, DeepL, MyMemory
 const LANGUAGES = {
-  YOR: { apiBibleLang: 'yor', bibleBrainLang: 'YOR', label: 'Yoruba' },
-  IBO: { apiBibleLang: 'ibo', bibleBrainLang: 'IBO', label: 'Igbo' },
-  PCM: { apiBibleLang: 'pcm', bibleBrainLang: 'PCM', label: 'Nigerian Pidgin' },
-  FRE: { apiBibleLang: 'fra', bibleBrainLang: 'FRN', label: 'French' },
-  SPA: { apiBibleLang: 'spa', bibleBrainLang: 'SPN', label: 'Spanish' },
+  YOR: { apiBibleLang: 'yor', bibleBrainLang: 'YOR', google: 'yo', deepl: null, mymemory: 'yo', label: 'Yoruba' },
+  IBO: { apiBibleLang: 'ibo', bibleBrainLang: 'IBO', google: 'ig', deepl: null, mymemory: 'ig', label: 'Igbo' },
+  PCM: { apiBibleLang: 'pcm', bibleBrainLang: 'PCM', google: null, deepl: null, mymemory: null, label: 'Nigerian Pidgin' },
+  FRE: { apiBibleLang: 'fra', bibleBrainLang: 'FRN', google: 'fr', deepl: 'fr', mymemory: 'fr', label: 'French' },
+  SPA: { apiBibleLang: 'spa', bibleBrainLang: 'SPN', google: 'es', deepl: 'es', mymemory: 'es', label: 'Spanish' },
 }
 
-// Azure Translator language codes — Azure does NOT support Nigerian Pidgin,
-// so pcm is deliberately absent here; the chain falls through to English
-// for Pidgin rather than mistranslating with Azure.
-const AZURE_LANG_CODE = { YOR: 'yo', IBO: 'ig', FRE: 'fr', SPA: 'es' }
-
-const memCache = new Map() // key -> { data, cachedAt } — process-lifetime only.
-// A real cross-request cache needs Supabase/Redis (not yet provisioned);
-// this in-memory cache still helps within a single warm serverless instance.
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours — verse text doesn't change
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const memCache = new Map()
 
 function cacheKey(langKey, book, chapter, verse) {
   return `${langKey}:${book}:${chapter}:${verse || 'all'}`
@@ -100,11 +81,7 @@ async function tryApiBible(apiKey, langKey, book, chapter, verse) {
   }
 }
 
-// ---- 2. Bible Brain (Digital Bible Platform v4) ----
-// NOTE: Bible Brain's exact fileset/book-id conventions can vary by
-// language and haven't been verified against a live key from this session.
-// This layer is wrapped defensively — any shape mismatch just falls
-// through to Azure below rather than breaking the request.
+// ---- 2. Bible Brain ----
 async function tryBibleBrain(apiKey, langKey, book, chapter, verse) {
   if (!apiKey) return null
   try {
@@ -137,18 +114,10 @@ async function tryBibleBrain(apiKey, langKey, book, chapter, verse) {
   }
 }
 
-// ---- 3. Google Cloud Translation (v2 basic) — covers Yoruba & Igbo, which
-// Azure also supports, but is included here because it's the provider key
-// this project actually has configured (GOOGLE_TRANSLATE_API_KEY). Tried
-// before Azure so an existing Azure key (if ever added) still works as a
-// secondary fallback. Nigerian Pidgin isn't a standard Cloud Translation
-// target language, so this (like Azure) yields nothing for PCM — that's
-// expected, not a bug; PCM only ever gets an authorised Bible edition.
-const GOOGLE_LANG_CODE = { YOR: 'yo', IBO: 'ig', FRE: 'fr', SPA: 'es' }
-
+// ---- 3. Google Translate ----
 async function tryGoogleTranslate(book, chapter, verse, englishVerses, langKey) {
   const key = process.env.GOOGLE_TRANSLATE_API_KEY
-  const googleLang = GOOGLE_LANG_CODE[langKey]
+  const googleLang = LANGUAGES[langKey].google
   if (!key || !googleLang || !englishVerses?.length) return null
   const toTranslate = verse ? englishVerses.filter(v => v.v === Number(verse)) : englishVerses
   if (!toTranslate.length) return null
@@ -170,48 +139,86 @@ async function tryGoogleTranslate(book, chapter, verse, englishVerses, langKey) 
       machineTranslated: true,
       sourceLanguage: 'en',
       sourceTranslation: 'WEB',
-      translationName: `Automatically translated (English WEB \u2192 ${LANGUAGES[langKey].label})`,
-      copyright: 'Machine translation \u2014 Google Cloud Translation',
+      translationName: `Automatically translated (English WEB → ${LANGUAGES[langKey].label})`,
+      copyright: 'Machine translation — Google Cloud Translation',
     }
   } catch {
     return null
   }
 }
 
-// ---- 4. Azure Translator (final fallback, English source, always labelled) ----
-async function tryAzure(book, chapter, verse, englishVerses, langKey) {
-  const key = process.env.AZURE_TRANSLATOR_KEY
-  const region = process.env.AZURE_TRANSLATOR_REGION
-  const azureLang = AZURE_LANG_CODE[langKey]
-  if (!key || !azureLang || !englishVerses?.length) return null
+// ---- 4. DeepL (only for French and Spanish) ----
+async function tryDeepL(book, chapter, verse, englishVerses, langKey) {
+  const key = process.env.DEEPL_API_KEY
+  const deeplLang = LANGUAGES[langKey].deepl
+  if (!key || !deeplLang || !englishVerses?.length) return null
   const toTranslate = verse ? englishVerses.filter(v => v.v === Number(verse)) : englishVerses
   if (!toTranslate.length) return null
-  const res = await fetch(`https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=${azureLang}`, {
-    method: 'POST',
-    headers: {
-      'Ocp-Apim-Subscription-Key': key,
-      'Ocp-Apim-Subscription-Region': region || '',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(toTranslate.map(v => ({ Text: v.text }))),
-  })
-  if (!res.ok) return null
-  const data = await res.json()
-  const verses = toTranslate.map((v, i) => ({ v: v.v, text: data[i]?.translations?.[0]?.text || v.text }))
-  return {
-    verses,
-    text: verse ? verses[0]?.text : undefined,
-    source: 'azure-translator',
-    machineTranslated: true,
-    sourceLanguage: 'en',
-    sourceTranslation: 'WEB',
-    translationName: `Automatically translated (English WEB \u2192 ${LANGUAGES[langKey].label})`,
-    copyright: 'Machine translation \u2014 Microsoft Azure Translator',
+  try {
+    // DeepL expects an array of text, and returns an array of translations
+    const res = await fetch('https://api-free.deepl.com/v2/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        auth_key: key,
+        text: toTranslate.map(v => v.text),
+        target_lang: deeplLang.toUpperCase(),
+        tag_handling: 'html',
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const translations = data?.translations || []
+    if (!translations.length) return null
+    const verses = toTranslate.map((v, i) => ({ v: v.v, text: translations[i]?.text || v.text }))
+    return {
+      verses,
+      text: verse ? verses[0]?.text : undefined,
+      source: 'deepl',
+      machineTranslated: true,
+      sourceLanguage: 'en',
+      sourceTranslation: 'WEB',
+      translationName: `Automatically translated (English WEB → ${LANGUAGES[langKey].label})`,
+      copyright: 'Machine translation — DeepL',
+    }
+  } catch {
+    return null
   }
 }
 
-// English source verses for the Azure fallback step, via the same
-// public-domain bible-api.com source the rest of the app already uses.
+// ---- 5. MyMemory (free, email required for higher limits) ----
+async function tryMyMemory(book, chapter, verse, englishVerses, langKey) {
+  const email = process.env.MYMEMORY_EMAIL
+  const mymemoryLang = LANGUAGES[langKey].mymemory
+  if (!mymemoryLang || !englishVerses?.length) return null
+  const toTranslate = verse ? englishVerses.filter(v => v.v === Number(verse)) : englishVerses
+  if (!toTranslate.length) return null
+  try {
+    const results = []
+    for (const v of toTranslate) {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(v.text)}&langpair=en|${mymemoryLang}${email ? `&de=${email}` : ''}`
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('MyMemory failed')
+      const data = await res.json()
+      const translated = data?.responseData?.translatedText || v.text
+      results.push({ v: v.v, text: translated })
+    }
+    return {
+      verses: results,
+      text: verse ? results[0]?.text : undefined,
+      source: 'mymemory',
+      machineTranslated: true,
+      sourceLanguage: 'en',
+      sourceTranslation: 'WEB',
+      translationName: `Automatically translated (English WEB → ${LANGUAGES[langKey].label})`,
+      copyright: 'Machine translation — MyMemory',
+    }
+  } catch {
+    return null
+  }
+}
+
+// English source (WEB) for fallback translations
 async function fetchEnglishSource(book, chapter) {
   try {
     const res = await fetch(`https://bible-api.com/${encodeURIComponent(`${book} ${chapter}`)}?translation=web`)
@@ -234,24 +241,25 @@ export default async function handler(req, res) {
   if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) { res.status(200).json(cached.data); return }
 
   try {
-    // 1. API.Bible
     let result = await tryApiBible(process.env.BIBLE_API_KEY, langKey, book, chapter, verse).catch(() => null)
-    // 2. Bible Brain
     if (!result) result = await tryBibleBrain(process.env.BIBLE_BRAIN_API_KEY, langKey, book, chapter, verse)
-    // 3. Google Translate, then 4. Azure Translator — neither has Pidgin
-    // coverage, so PCM only ever reaches an authorised edition above.
+
+    // Machine translation fallbacks – skip PCM entirely (no support)
     if (!result && langKey !== 'PCM') {
       const englishVerses = await fetchEnglishSource(book, chapter)
-      result = await tryGoogleTranslate(book, chapter, verse, englishVerses, langKey)
-      if (!result) result = await tryAzure(book, chapter, verse, englishVerses, langKey)
+      if (englishVerses.length) {
+        result = await tryGoogleTranslate(book, chapter, verse, englishVerses, langKey)
+        if (!result) result = await tryDeepL(book, chapter, verse, englishVerses, langKey)
+        if (!result) result = await tryMyMemory(book, chapter, verse, englishVerses, langKey)
+      }
     }
 
     if (!result) {
       res.status(404).json({
         error: `No ${LANGUAGES[langKey].label} text available for ${book} ${chapter} from any source yet.`,
         note: langKey === 'PCM'
-          ? 'Nigerian Pidgin has no machine-translation fallback by design (Google Translate and Azure don\u2019t support it) — only an authorised pcm Bible edition will display here.'
-          : 'Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, or AZURE_TRANSLATOR_KEY (+ AZURE_TRANSLATOR_REGION) to enable this chain.',
+          ? 'Nigerian Pidgin has no machine-translation fallback (no provider supports it) — only an authorised Pidgin Bible edition will display here.'
+          : 'Add BIBLE_API_KEY, BIBLE_BRAIN_API_KEY, GOOGLE_TRANSLATE_API_KEY, DEEPL_API_KEY, or MYMEMORY_EMAIL to enable this chain.',
       })
       return
     }
