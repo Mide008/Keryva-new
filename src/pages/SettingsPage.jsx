@@ -256,13 +256,42 @@ export default function SettingsPage(){
     )},
     {id:'language',icon:'globe',label:t('language'),desc:LANGS.find(l=>l.code===user.language)?.labelKey ? t(LANGS.find(l=>l.code===user.language).labelKey) : 'English',content:(
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
-        {LANGS.map(l=>{
-          const label = t(l.labelKey)
+        {LANGS.map(l => {
+          const isSelected = user.language === l.code
           return (
-            <button key={l.code} onClick={()=>handleLanguageChange(l.code)}
-              style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',borderRadius:10,cursor:'pointer',background:user.language===l.code?'var(--gold-50)':'var(--bg-card)',border:`1.5px solid ${user.language===l.code?'var(--gold-400)':'var(--border-subtle)'}`,transition:'all 0.15s'}}>
-              <span style={{fontSize:14,fontWeight:user.language===l.code?500:400}}>{label}</span>
-              {user.language===l.code&&<span style={{fontSize:12,color:'var(--gold-700)',fontWeight:600}}>{t('settings.selected')}</span>}
+            <button
+              key={l.code}
+              onClick={() => handleLanguageChange(l.code)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 14px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                background: isSelected ? 'var(--gold-50)' : 'var(--bg-card)',
+                border: `1.5px solid ${isSelected ? 'var(--gold-400)' : 'var(--border-subtle)'}`,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSelected) e.currentTarget.style.background = 'var(--gold-50)'
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) e.currentTarget.style.background = 'var(--bg-card)'
+              }}
+            >
+              <span style={{
+                fontSize: 14,
+                fontWeight: isSelected ? 500 : 400,
+                color: isSelected ? 'var(--gold-700)' : 'var(--text-secondary)',
+              }}>
+                {t(l.labelKey)}
+              </span>
+              {isSelected && (
+                <span style={{ fontSize: 12, color: 'var(--gold-700)', fontWeight: 600 }}>
+                  ✓ {t('settings.selected')}
+                </span>
+              )}
             </button>
           )
         })}
