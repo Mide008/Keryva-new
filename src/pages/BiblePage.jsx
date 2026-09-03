@@ -8,17 +8,40 @@ import { fetchChapter } from '@/services/bibleApi'
 import { VERSE_PROMPTS } from '@/lib/aiServices'
 import { RevealCard } from '@/components/ui/MotionComponents'
 
+// Maps the app's UI-language setting to a sensible default Bible
+// translation, so switching language in Settings also changes what
+// language Scripture itself reads in here — not just the page chrome.
+// This only sets the INITIAL/auto-followed choice; picking a different
+// translation from the dropdown always overrides it for that session.
+const LANGUAGE_TO_BIBLE_TRANSLATION = { yo: 'YOR', ig: 'IBO', pcm: 'PCM', fr: 'FRE', es: 'SPA', en: 'KJV' }
+
 export default function BiblePage(){
   const { t } = useTranslation()
-  const {saveVerse,savedVerses,showToast,setActivePage,setPendingVerse,verseNotes,addVerseNote,pendingChapter,setPendingChapter}=useApp()
+  const {saveVerse,savedVerses,showToast,setActivePage,setPendingVerse,verseNotes,addVerseNote,pendingChapter,setPendingChapter,user}=useApp()
   const {ask,loading}=useAI()
   const [view,setView]=useState('books')
   const [book,setBook]=useState(null)
   const [ch,setCh]=useState(1)
-  const [tran,setTran]=useState('KJV')
+  const [tran,setTran]=useState(()=>LANGUAGE_TO_BIBLE_TRANSLATION[user?.language]||'KJV')
+  const [tranManuallySet,setTranManuallySet]=useState(false)
   const [testament,setTestament]=useState('All')
   const [bSearch,setBSearch]=useState('')
   const [jumpMatch,setJumpMatch]=useState(null)
+
+  // Follows the app's UI language automatically — e.g. switching to
+  // Yoruba in Settings switches the Bible reader to the Yoruba edition
+  // too, not just the page's buttons and labels. Stops following once the
+  // user manually picks a translation themselves in this session, so a
+  // deliberate choice (e.g. wanting ESV while UI language is Yoruba)
+  // isn't silently overridden on the next language change.
+  useEffect(()=>{
+    if(tranManuallySet)return
+    const mapped=LANGUAGE_TO_BIBLE_TRANSLATION[user?.language]
+    if(mapped&&mapped!==tran)setTran(mapped)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[user?.language])
+
+  const chooseTran=(code)=>{setTran(code);setTranManuallySet(true)}
 
   // Detects "Gen 3", "Genesis 3:16", "1 Cor 13", "jn 3 16" etc while typing —
   // matches the book by full name OR abbreviation (case-insensitive, partial
@@ -67,7 +90,7 @@ export default function BiblePage(){
     if(found){
       setBook(found)
       setCh(Math.min(pendingChapter.chapter,found.chapters))
-      if(pendingChapter.translation)setTran(pendingChapter.translation)
+      if(pendingChapter.translation){setTran(pendingChapter.translation);setTranManuallySet(true)}
       setView('reading')
       if(pendingChapter.verse)setPendingVerseNum(pendingChapter.verse)
     }
@@ -148,7 +171,7 @@ export default function BiblePage(){
                 <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontSize:15,pointerEvents:'none'}}>🔍</span>
                 <input className="input-field" style={{paddingLeft:36}} placeholder={t('searchBooksPlaceholder')} value={bSearch} onChange={e=>setBSearch(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&jumpMatch)jumpToReference()}}/>
               </div>
-              <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>setTran(e.target.value)}>
+              <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>chooseTran(e.target.value)}>
                 {TRANSLATIONS.map(tr=><option key={tr.code} value={tr.code}>{tr.code}</option>)}
               </select>
             </div>
@@ -163,7 +186,7 @@ export default function BiblePage(){
               <strong>{TRANSLATIONS.find(tr=>tr.code===tran)?.name}</strong> — {TRANSLATIONS.find(tr=>tr.code===tran)?.notes}
             </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-              {TRANSLATIONS.map(tr=><button key={tr.code} title={tr.name} onClick={()=>setTran(tr.code)} className={`tag ${tran===tr.code?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 10px',fontSize:11,fontWeight:tran===tr.code?600:400}}>{tr.code}</button>)}
+              {TRANSLATIONS.map(tr=><button key={tr.code} title={tr.name} onClick={()=>chooseTran(tr.code)} className={`tag ${tran===tr.code?'tag-dark':'tag-ink'}`} style={{cursor:'pointer',padding:'5px 10px',fontSize:11,fontWeight:tran===tr.code?600:400}}>{tr.code}</button>)}
             </div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {['All','OT','NT'].map(tst=>{
@@ -223,7 +246,7 @@ export default function BiblePage(){
                 <h2 style={{fontFamily:'var(--font-serif)',fontSize:22,fontWeight:500,lineHeight:1.1}}>{book.name}</h2>
                 <div style={{fontSize:12,color:'var(--text-muted)'}}>{t('chapter')} {ch}</div>
               </div>
-              <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>setTran(e.target.value)}>
+              <select className="select-field" style={{width:'auto',minWidth:80}} value={tran} onChange={e=>chooseTran(e.target.value)}>
                 {TRANSLATIONS.map(tr=><option key={tr.code} value={tr.code}>{tr.code}</option>)}
               </select>
             </div>
