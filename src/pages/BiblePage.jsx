@@ -266,7 +266,17 @@ export default function BiblePage(){
               {!chapterLoading&&verses.map(v=>(
                 <span key={v.v} id={`verse-${v.v}`} style={{cursor:'pointer'}} onClick={()=>openAction(v)}>
                   <sup style={{fontSize:10,fontWeight:600,color:'var(--gold-600)',marginRight:3,verticalAlign:'super'}}>{v.v}</sup>
-                  <span style={{fontFamily:'var(--font-serif)',fontSize:'clamp(16px,2vw,18px)',color:selected?.v===v.v?'var(--ink-900)':'var(--ink-700)',background:selected?.v===v.v?'rgba(212,168,75,0.18)':'transparent',borderRadius:3,padding:'1px 2px',transition:'all var(--dur-fast) ease',lineHeight:1.9}}>
+                  <span style={{
+                    fontFamily:'var(--font-serif)',
+                    fontSize:'clamp(16px,2vw,18px)',
+                    // FIXED: use var(--text-primary) for dark mode compatibility
+                    color: selected?.v === v.v ? 'var(--ink-900)' : 'var(--text-primary)',
+                    background: selected?.v === v.v ? 'rgba(212,168,75,0.18)' : 'transparent',
+                    borderRadius:3,
+                    padding:'1px 2px',
+                    transition:'all var(--dur-fast) ease',
+                    lineHeight:1.9
+                  }}>
                     {v.text}{' '}
                   </span>
                 </span>
@@ -315,7 +325,7 @@ export default function BiblePage(){
                 ))}
               </div>
               {/* AI actions */}
-              <div style={{fontSize:11,fontWeight:500,color:'var(--text-muted)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>{t('aiInsights')}</div>
+              <div style={{fontSize:11,fontWeight:500,color:'var(--text-muted)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>{t('insights')}</div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:aiResult?16:0}}>
                 {[
                   ['explain', t('explain')],
