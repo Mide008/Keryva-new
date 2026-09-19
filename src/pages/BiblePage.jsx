@@ -17,7 +17,9 @@ const LANGUAGE_TO_BIBLE_TRANSLATION = { yo: 'YOR', ig: 'IBO', pcm: 'PCM', fr: 'F
 
 export default function BiblePage(){
   const { t } = useTranslation()
-  const {saveVerse,savedVerses,showToast,setActivePage,setPendingVerse,verseNotes,addVerseNote,pendingChapter,setPendingChapter,user}=useApp()
+  const {saveVerse,savedVerses,showToast,setActivePage,goToPage,setPendingVerse,verseNotes,addVerseNote,pendingChapter,setPendingChapter,setBibleContext,user}=useApp()
+  const navigate = goToPage || setActivePage
+  const reportPosition = setBibleContext || (()=>{})
   const {ask,loading}=useAI()
   const [view,setView]=useState('books')
   const [book,setBook]=useState(null)
@@ -111,6 +113,12 @@ export default function BiblePage(){
     return ()=>{cancelled=true}
   },[view,book,ch,tran])
 
+  // Report current Bible position to AppContext so "go back" can resume here.
+  useEffect(()=>{
+    if(view!=='reading'||!book)return
+    reportPosition({bookName:book.name,chapter:ch,translation:tran,verse:selected?.v||null})
+  },[view,book,ch,tran,selected])
+
   useEffect(()=>{
     if(!pendingVerseNum||chapterLoading||verses.length===0)return
     const target=verses.find(v=>v.v===pendingVerseNum)
@@ -153,10 +161,10 @@ export default function BiblePage(){
     if(type==='save'){saveVerse({ref,translation:tran,text:selected.text,collection:'General'})}
     else if(type==='copy'){navigator.clipboard.writeText(`${selected.text} — ${ref} (${tran})`).catch(()=>{});showToast(t('copied'),'📋')}
     else if(type==='share'){const m=`*${ref}* (${tran})\n\n_${selected.text}_\n\n— Keryva · OmniCraft Studios 📖`;window.open(`https://wa.me/?text=${encodeURIComponent(m)}`,'_blank');showToast(t('shareToWhatsApp'),'💬')}
-    else if(type==='addSermon'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sermon');showToast(t('verseReadySermon'),'🎙')}
-    else if(type==='addPrayer'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('prayer');showToast(t('verseReadyPrayer'),'🙏')}
-    else if(type==='addStudy'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('study');showToast(t('verseReadyStudy'),'📚')}
-    else if(type==='addSunday'){setPendingVerse({ref,translation:tran,text:selected.text});setActivePage('sunday');showToast(t('verseReadySunday'),'📋')}
+    else if(type==='addSermon'){setPendingVerse({ref,translation:tran,text:selected.text});navigate('sermon');showToast(t('verseReadySermon'),'🎙')}
+    else if(type==='addPrayer'){setPendingVerse({ref,translation:tran,text:selected.text});navigate('prayer');showToast(t('verseReadyPrayer'),'🙏')}
+    else if(type==='addStudy'){setPendingVerse({ref,translation:tran,text:selected.text});navigate('study');showToast(t('verseReadyStudy'),'📚')}
+    else if(type==='addSunday'){setPendingVerse({ref,translation:tran,text:selected.text});navigate('sunday');showToast(t('verseReadySunday'),'📋')}
     else if(type==='note'){const n=window.prompt(`${t('noteForPrefix')} ${ref}:`);if(n)addVerseNote(ref,selected.text,n,null)}
     closeAction()
   }
@@ -324,7 +332,7 @@ export default function BiblePage(){
                   </button>
                 ))}
               </div>
-              {/* AI actions */}
+              {/* AI actions — renamed label to "Insights" */}
               <div style={{fontSize:11,fontWeight:500,color:'var(--text-muted)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>{t('insights')}</div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:aiResult?16:0}}>
                 {[

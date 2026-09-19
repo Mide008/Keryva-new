@@ -4,7 +4,6 @@ import { useApp } from '@/lib/AppContext'
 import { useTranslation } from '@/hooks/useTranslation'
 import { GLYPHS } from '@/components/ui/Icon3D'
 
-// Translation key mapping for page titles
 const TITLE_KEYS = {
   home: 'topBar.title_home',
   bible: 'topBar.title_bible',
@@ -30,7 +29,7 @@ const TITLE_KEYS = {
 }
 
 export default function TopBar() {
-  const { activePage, setSidebarOpen, user } = useApp()
+  const { activePage, setSidebarOpen, user, goBack, navStack } = useApp()
   const { t } = useTranslation()
   
   const h = new Date().getHours()
@@ -40,12 +39,21 @@ export default function TopBar() {
   else greetingKey = 'topBar.greeting_evening'
 
   const pageTitle = TITLE_KEYS[activePage] ? t(TITLE_KEYS[activePage]) : ''
+  const canGoBack = navStack && navStack.length > 0
 
   return (
     <header className="topbar" style={{background:'rgba(255,255,255,0.94)',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',display:'flex',alignItems:'center'}}>
       <button className="mobile-only" onClick={() => setSidebarOpen(true)} aria-label={t('topBar.menuAria')} style={{marginRight:12,background:'none',border:'none',cursor:'pointer',color:'var(--text-secondary)',display:'flex',alignItems:'center',padding:6}}>
         <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
+      {canGoBack && (
+        <button onClick={goBack} aria-label={t('backLabel')} title={t('backLabel')}
+          style={{marginRight:8,background:'none',border:'none',cursor:'pointer',color:'var(--text-secondary)',display:'flex',alignItems:'center',padding:6}}>
+          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+      )}
       <motion.div key={activePage} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{duration:0.2}} style={{flex:1}}>
         {activePage === 'home' ? (
           <div>
