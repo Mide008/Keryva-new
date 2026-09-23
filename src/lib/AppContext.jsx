@@ -47,22 +47,76 @@ export function AppProvider({children}){
     confirmResolverRef.current?.(val)
     confirmResolverRef.current=null
   },[])
+
+  // ---- Navigation memory: "go back to where I was" — universal, automatic ----
+  // Every page in the app already calls setActivePage(x) to navigate —
+  // Sidebar, bottom nav, Settings links, Home cards, empty-state buttons,
+  // verse actions, all of it. Rather than hunt down and edit every one of
+  // those call sites across 20+ files, setActivePage ITSELF now records
+  // the hop, so the back feature works everywhere automatically with zero
+  // other files needing to change.
+  //
+  // pageContext: the current resumable snapshot for any page that reports
+  // one, keyed by page name (e.g. pageContext.bible, pageContext.devotional
+  // — whatever a page chooses to report via reportPageContext).
+  // navStack: LIFO of {page, resumeData} — what setActivePage pushes.
+  // pendingResume: what goBack() hands to the page it lands you back on.
   const[activePage,setActivePageRaw]=useState(()=>new URLSearchParams(window.location.search).get('page')||'home')
-  const setActivePage=useCallback((page)=>{
+  const[navStack,setNavStack]=useState([])
+  const[pageContext,setPageContext]=useState({})
+  const[pendingResume,setPendingResume]=useState(null)
+  const isRestoringRef=useRef(false) // true only while goBack() is restoring a page — suppresses the stack-push so pressing back doesn't push a new entry for itself
+  const activePageRef=useRef(activePage)
+  useEffect(()=>{ activePageRef.current=activePage },[activePage])
+  const pageContextRef=useRef(pageContext)
+  useEffect(()=>{ pageContextRef.current=pageContext },[pageContext])
+
+  const setActivePage=useCallback((page,opts={})=>{
+    if(!isRestoringRef.current && activePageRef.current!==page){
+      const leavingPage=activePageRef.current
+      const resumeData = opts.currentResumeData!==undefined ? opts.currentResumeData : (pageContextRef.current[leavingPage] ?? null)
+      setNavStack(stack=>[...stack,{page:leavingPage,resumeData}].slice(-15)) // cap at 15 hops
+    }
     setActivePageRaw(page)
     window.history.pushState({page},'',`?page=${page}`)
   },[])
+  const goToPage=setActivePage // alias — same function, kept for pages already written against goToPage
+
+  const goBack=useCallback(()=>{
+    setNavStack(stack=>{
+      if(!stack.length)return stack
+      const prev=stack[stack.length-1]
+      isRestoringRef.current=true
+      setActivePage(prev.page)
+      isRestoringRef.current=false
+      if(prev.resumeData){
+        // Bible Reader's existing pendingChapter mechanism, kept working as-is,
+        // PLUS a generic pendingResume any page can read for itself.
+        if(prev.page==='bible') setPendingChapter(prev.resumeData)
+        setPendingResume({page:prev.page,data:prev.resumeData})
+      }
+      return stack.slice(0,-1)
+    })
+  },[setActivePage])
+
   useEffect(()=>{
-    // Seed the initial history entry so the very first back-press has a real
-    // browser history state to resolve to, and wire real browser back/forward
-    // (and the mobile back-gesture, which fires the same popstate event) to
-    // in-app navigation instead of leaving the page or doing nothing.
     window.history.replaceState({page:activePage},'',`?page=${activePage}`)
     const onPopState=(e)=>setActivePageRaw(e.state?.page||'home')
     window.addEventListener('popstate',onPopState)
     return ()=>window.removeEventListener('popstate',onPopState)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
+
+  // Any page calls this with its own name + current resumable state, as
+  // often as that state changes — e.g. reportPageContext('devotional',
+  // {date}) every time the viewed entry changes. Kept as the Bible-only
+  // setBibleContext alias too, so BiblePage's existing import still works.
+  const reportPageContext=useCallback((page,data)=>{
+    setPageContext(prev=>({...prev,[page]:data}))
+  },[])
+  const setBibleContext=useCallback((ctx)=>{ reportPageContext('bible',ctx) },[reportPageContext])
+  const clearPendingResume=useCallback(()=>{ setPendingResume(null) },[])
+
   const[sidebarOpen,setSidebarOpen]=useState(false)
   const[sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem('rhema_sidebar_collapsed')==='1')
   useEffect(()=>{ localStorage.setItem('rhema_sidebar_collapsed', sidebarCollapsed?'1':'0') },[sidebarCollapsed])
@@ -107,9 +161,8 @@ export function AppProvider({children}){
     const existing=s.id?sermons.find(x=>x.id===s.id):null
     const e={...s,id:s.id||Date.now(),date:s.date||new Date().toISOString().split('T')[0]}
     if(existing){
-      // snapshot the previous state before overwriting, so it can be restored
       const snapshot={...existing,versionedAt:new Date().toISOString()}
-      e.versions=[snapshot,...(existing.versions||[])].slice(0,20) // cap history to last 20
+      e.versions=[snapshot,...(existing.versions||[])].slice(0,20)
     }
     setSermons(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Sermon saved','📖');return e
   },[showToast,sermons])
@@ -128,7 +181,6 @@ export function AppProvider({children}){
   const saveStudyGuide=useCallback(g=>{const e={...g,id:g.id||Date.now(),date:g.date||new Date().toISOString().split('T')[0]};setStudyGuides(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Study guide saved','📚');return e},[showToast])
   const saveSundayPack=useCallback(p=>{const e={...p,id:p.id||Date.now(),date:p.date||new Date().toISOString().split('T')[0]};setSundayPacks(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Sunday Pack saved','📋');return e},[showToast])
   const saveSocialPack=useCallback(p=>{const e={...p,id:p.id||Date.now(),date:p.date||new Date().toISOString().split('T')[0]};setSocialPacks(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Social Pack saved','📱');return e},[showToast])
-
   const saveWarfareEntry=useCallback(e=>{const entry={...e,id:e.id||Date.now(),date:e.date||new Date().toISOString().split('T')[0]};setWarfareEntries(a=>[entry,...a.filter(x=>x.id!==entry.id)]);showToast('Battle plan saved','⚔️');return entry},[showToast])
   const deleteWarfareEntry=useCallback(id=>{setWarfareEntries(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
   const saveDevotional=useCallback(d=>{const entry={...d,id:d.id||Date.now(),date:d.date||new Date().toISOString().split('T')[0]};setDevotionals(a=>[entry,...a.filter(x=>x.date!==entry.date)]);return entry},[])
@@ -150,7 +202,6 @@ export function AppProvider({children}){
     setFastingEntries(a=>a.map(e=>e.id===entryId?{...e,completed:true,completedAt:new Date().toISOString(),endReview:review}:e))
     showToast('Fasting journey completed','🙌')
   },[showToast])
-
   const saveProject=useCallback(p=>{const e={...p,id:p.id||Date.now(),date:p.date||new Date().toISOString().split('T')[0],items:p.items||[]};setProjects(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Project saved','🗂');return e},[showToast])
   const deleteProject=useCallback(id=>{setProjects(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
   const addToProject=useCallback((projectId,item)=>{
@@ -160,10 +211,8 @@ export function AppProvider({children}){
   const removeFromProject=useCallback((projectId,type,itemId)=>{
     setProjects(a=>a.map(p=>p.id===projectId?{...p,items:p.items.filter(x=>!(x.type===type&&x.id===itemId))}:p))
   },[])
-
   const saveCalendarEvent=useCallback(ev=>{const e={...ev,id:ev.id||Date.now()};setCalendarEvents(a=>[...a.filter(x=>x.id!==e.id),e].sort((x,y)=>new Date(x.date)-new Date(y.date)));showToast('Event saved','📅');return e},[showToast])
   const deleteCalendarEvent=useCallback(id=>{setCalendarEvents(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
-
   const saveVaultItem=useCallback(v=>{const e={...v,id:v.id||Date.now(),date:v.date||new Date().toISOString().split('T')[0]};setVaultItems(a=>[e,...a.filter(x=>x.id!==e.id)]);showToast('Saved to Knowledge Vault','📚');return e},[showToast])
   const deleteVaultItem=useCallback(id=>{setVaultItems(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
 
@@ -187,6 +236,8 @@ export function AppProvider({children}){
     toasts,showToast,
     confirmAction,confirmRequest,resolveConfirm,
     activePage,setActivePage,
+    goToPage,goBack,navStack,
+    reportPageContext,setBibleContext,pendingResume,clearPendingResume,
     sidebarOpen,setSidebarOpen,
     sidebarCollapsed,setSidebarCollapsed,
     theme,setTheme,

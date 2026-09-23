@@ -1,6 +1,6 @@
 // src/App.jsx
-import { Suspense, lazy, Component } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Suspense, lazy, Component, useState, useEffect, useMemo, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { AppProvider, useApp } from '@/lib/AppContext'
 import Sidebar from '@/components/layout/Sidebar'
 import TopBar from '@/components/layout/TopBar'
@@ -34,6 +34,33 @@ const YearInReviewPage        = lazy(() => import('@/pages/YearInReviewPage'))
 const VaultPage              = lazy(() => import('@/pages/VaultPage'))
 const ServiceCentrePage      = lazy(() => import('@/pages/ServiceCentrePage'))
 
+// Page registry — one place mapping the activePage key to its component.
+// Adding a new page = one line here. Keep-alive, back-nav, scroll memory
+// and routing all pick it up automatically.
+const PAGES = {
+  home:           HomePage,
+  inspire:        InspirePage,
+  search:         SearchPage,
+  sermon:         SermonPage,
+  study:          StudyPage,
+  bible:          BiblePage,
+  prayer:         PrayerPage,
+  saved:          SavedPage,
+  settings:       SettingsPage,
+  sunday:         SundayPackPage,
+  social:         SocialPackPage,
+  warfare:        SpiritualWarfarePage,
+  devotional:     DevotionalPage,
+  confessions:    ConfessionsPage,
+  agent:          AgentPage,
+  fasting:        FastingPage,
+  projects:       ProjectsPage,
+  calendar:       CalendarPage,
+  'year-review':  YearInReviewPage,
+  vault:          VaultPage,
+  service:        ServiceCentrePage,
+}
+
 function Fallback() {
   return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:320,flexDirection:'column',gap:16}}>
@@ -43,40 +70,48 @@ function Fallback() {
   )
 }
 
-function PageRouter({ page }) {
-  switch(page) {
-    case 'inspire':  return <InspirePage/>
-    case 'search':   return <SearchPage/>
-    case 'sermon':   return <SermonPage/>
-    case 'study':    return <StudyPage/>
-    case 'bible':    return <BiblePage/>
-    case 'prayer':   return <PrayerPage/>
-    case 'saved':    return <SavedPage/>
-    case 'settings': return <SettingsPage/>
-    case 'sunday':   return <SundayPackPage/>
-    case 'social':   return <SocialPackPage/>
-    case 'warfare':  return <SpiritualWarfarePage/>
-    case 'devotional': return <DevotionalPage/>
-    case 'confessions': return <ConfessionsPage/>
-    case 'agent':    return <AgentPage/>
-    case 'fasting':  return <FastingPage/>
-    case 'projects': return <ProjectsPage/>
-    case 'calendar': return <CalendarPage/>
-    case 'year-review': return <YearInReviewPage/>
-    case 'vault':    return <VaultPage/>
-    case 'service':  return <ServiceCentrePage/>
-    default:         return <HomePage/>
-  }
-}
-
-const pv = {
-  initial:{ opacity:0, y:10 },
-  animate:{ opacity:1, y:0, transition:{ duration:0.28, ease:[0.16,1,0.3,1] } },
-  exit:   { opacity:0, y:-6, transition:{ duration:0.16 } },
-}
-
 function Shell() {
   const { activePage, confirmRequest, resolveConfirm } = useApp()
+
+  // Unknown page key → home. Preserves the old PageRouter's
+  // `default: return <HomePage/>` fallback.
+  const normalizedPage = PAGES[activePage] ? activePage : 'home'
+
+  // Lazy-mount on first visit; never unmount after that. Pages that have
+  // never been visited aren't rendered at all, so we don't pay for them.
+  const [seenPages, setSeenPages] = useState(() => new Set([normalizedPage]))
+  useEffect(() => {
+    setSeenPages(prev => prev.has(normalizedPage) ? prev : new Set(prev).add(normalizedPage))
+  }, [normalizedPage])
+
+  // The page currently in the URL is ALWAYS rendered this pass, even on the
+  // very first render after a change (before the effect above has run), so
+  // there's no one-frame blank.
+  const pagesToRender = useMemo(() => {
+    const s = new Set(seenPages)
+    s.add(normalizedPage)
+    return [...s]
+  }, [seenPages, normalizedPage])
+
+  // Per-page scroll memory — one place, no per-page code. A scroll listener
+  // on #main-content saves the active page's scrollTop continuously; when a
+  // page is revisited, its saved scrollTop is restored on the next frame.
+  const scrollMemoryRef = useRef({})
+  useEffect(() => {
+    const area = document.getElementById('main-content')
+    if (!area) return
+    const saveScroll = () => { scrollMemoryRef.current[normalizedPage] = area.scrollTop }
+    area.addEventListener('scroll', saveScroll, { passive: true })
+    const saved = scrollMemoryRef.current[normalizedPage]
+    if (saved) {
+      requestAnimationFrame(() => {
+        const a = document.getElementById('main-content')
+        if (a) a.scrollTop = saved
+      })
+    }
+    return () => area.removeEventListener('scroll', saveScroll)
+  }, [normalizedPage])
+
   return (
     <div className="app-shell">
       <OfflineBanner/>
@@ -84,13 +119,28 @@ function Shell() {
       <div className="main-content">
         <TopBar/>
         <main className="page-area" id="main-content">
-          <AnimatePresence mode="wait">
-            <motion.div key={activePage} variants={pv} initial="initial" animate="animate" exit="exit">
-              <Suspense fallback={<Fallback/>}>
-                <PageRouter page={activePage}/>
-              </Suspense>
-            </motion.div>
-          </AnimatePresence>
+          {pagesToRender.map(name => {
+            const Page = PAGES[name]
+            if (!Page) return null
+            const isActive = name === normalizedPage
+            return (
+              <motion.div
+                key={name}
+                initial={{ opacity: 0, y: 10 }}
+                animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                transition={{ duration: isActive ? 0.28 : 0, ease: [0.16, 1, 0.3, 1] }}
+                // display:none removes the inactive page from layout, tab
+                // order, and the accessibility tree in one shot. React state,
+                // hooks, refs and effects inside the page all keep running —
+                // only its pixels are gone.
+                style={{ display: isActive ? 'block' : 'none' }}
+              >
+                <Suspense fallback={<Fallback/>}>
+                  <Page/>
+                </Suspense>
+              </motion.div>
+            )
+          })}
         </main>
       </div>
       <BottomNav/>
