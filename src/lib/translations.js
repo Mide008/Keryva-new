@@ -1,6 +1,7 @@
 // src/lib/translations.js
 export const translations = {
   en: {
+    backLabel: "Back",
     point: "Point",
     disclaimer: "Generated content — please verify scripture and preach in your own voice.",
     cannotBeUndone: "This cannot be undone.",
@@ -1314,6 +1315,7 @@ export const translations = {
     completedLabel: "Completed",
   },
   fr: {
+    backLabel: "Retour",
     point: "Point",
     disclaimer: "Contenu généré — veuillez vérifier les Écritures et prêcher avec votre propre voix.",
     cannotBeUndone: "Cette action est irréversible.",
@@ -2599,6 +2601,7 @@ export const translations = {
     completedLabel: "Terminé",
   },
   es: {
+    backLabel: "Atrás",
     point: "Punto",
     disclaimer: "Contenido generado — verifica las Escrituras y predica con tu propia voz.",
     cannotBeUndone: "Esto no se puede deshacer.",
@@ -3884,6 +3887,7 @@ export const translations = {
     completedLabel: "Completado",
   },
   pcm: {
+    backLabel: "Back",
     point: "Point",
     disclaimer: "Generated content — abeg verify scripture and preach with your own voice.",
     cannotBeUndone: "Dis one no fit undo.",
@@ -5169,6 +5173,7 @@ export const translations = {
     completedLabel: "Completed",
   },
   yo: {
+    backLabel: "Ẹ̀yìn",
     point: "Kókó",
     disclaimer: "Àkóónú tí a dá. Jọ̀wọ́ ṣàyẹ̀wò ẹsẹ Ìwé Mímọ́ kí o sì wàásù pẹ̀lú ohùn tirẹ.",
     cannotBeUndone: "A kò lè yí èyí padà.",
@@ -6454,6 +6459,7 @@ export const translations = {
     completedLabel: "Parí",
   },
   ig: {
+    backLabel: "Azụ",
     point: "Isi Okwu",
     disclaimer: "Ọdịnaya emepụtara. Biko lelegharịa akwụkwọ nsọ ma kwusaa okwu n’olu gị.",
     cannotBeUndone: "Enweghị ike imegharị nke a.",
