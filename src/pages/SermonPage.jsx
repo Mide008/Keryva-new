@@ -13,6 +13,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import { RevealCard, MagneticBtn, MotionHeadline } from '@/components/ui/MotionComponents'
 import { tryConsume } from '@/lib/usageLimits'
 import UsageBadge from '@/components/ui/UsageBadge'
+import { buildSermonSlideDeck, downloadSlidesPptx } from '@/lib/slideDeck'
 
 // Options with labelKey for translation
 const AUD = [
@@ -52,9 +53,6 @@ const TONE = [
   { value: 'Revival', labelKey: 'sermon.tone_revival' },
 ]
 
-function copyText(txt, showToast) { navigator.clipboard.writeText(txt).catch(()=>{}); showToast(t('copiedToast'), '📋') }
-function shareWA(txt, showToast) { window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank'); showToast(t('shareToWhatsApp'), '💬') }
-
 export default function SermonPage() {
   const { t } = useTranslation()
   const [tab, setTab] = useState('build')
@@ -77,10 +75,16 @@ export default function SermonPage() {
   const [timerOn, setTimerOn] = useState(false)
   const [pulpitScale, setPulpitScale] = useState(1)
   const [teleprompterOn, setTeleprompterOn] = useState(false)
+  const [slidesBuilding, setSlidesBuilding] = useState(false)
   const preachScrollRef = useRef(null)
   const { ask, loading } = useAI()
   const ai = useAIServices(ask)
   const { user, sermons, saveSermon, deleteSermon, restoreSermonVersion, showToast, setActivePage, pendingVerse, setPendingVerse, confirmAction } = useApp()
+
+  // Helper closures — created here so they capture `t` from the hook,
+  // not referenced at module scope (which caused a ReferenceError before).
+  const copyText = (txt) => { navigator.clipboard.writeText(txt).catch(()=>{}); showToast(t('copiedToast'), '📋') }
+  const shareWA = (txt) => { window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank'); showToast(t('shareToWhatsApp'), '💬') }
 
   useEffect(() => {
     if (!pendingVerse) return
@@ -160,6 +164,25 @@ export default function SermonPage() {
     setReviewing(false)
     if (parsed) setReview(parsed)
     else showToast(t('sermon.couldNotReview'), '❌')
+  }
+
+  // Reshapes the already-generated sermon into a slide deck — no extra AI
+  // call needed, since a sermon already has exactly the structure slides
+  // need (title/theme, an intro, numbered points with scripture, a close).
+  // Downloads as a real .pptx the user can open and tweak in PowerPoint,
+  // Keynote, or Google Slides.
+  const generateSlides = async () => {
+    if (!sermon) return
+    setSlidesBuilding(true)
+    try {
+      const deck = buildSermonSlideDeck(sermon, { church: user?.church, speaker: user?.name })
+      await downloadSlidesPptx(deck, (sermon.title || form.topic || 'Sermon').replace(/[^a-z0-9]+/gi,'-'))
+      showToast('Slides downloaded', '📊')
+    } catch (e) {
+      showToast('Could not build slides right now', '❌')
+    } finally {
+      setSlidesBuilding(false)
+    }
   }
 
   const fullText = () => sermon ? `${sermon.title}\n\n${t('theme')}: ${sermon.theme}\n${t('mainText')}: ${sermon.mainText}\n\n${t('introduction')}\n${sermon.introduction}\n\n${sermon.points?.map((p,i)=>`${t('point')} ${i+1}: ${p.title}\n${p.content}\n${p.scripture}`).join('\n\n')}\n\n${t('application')}\n${sermon.application}\n\n${t('altarCall')}\n${sermon.altarCall}\n\n${t('closingPrayer')}\n${sermon.closingPrayer}\n\nKeryva · OmniCraft Studios` : ''
@@ -283,15 +306,16 @@ export default function SermonPage() {
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   {[
                     [t('saveAction'), save, 'btn-gold'],
-                    [t('whatsappAction'), ()=>shareWA(fullText(), t('shareToWhatsApp')), 'btn-outline'],
-                    [t('copyAllAction'), ()=>copyText(fullText(), t('copiedToast')), 'btn-outline'],
+                    [t('whatsappAction'), ()=>shareWA(fullText()), 'btn-outline'],
+                    [t('copyAllAction'), ()=>copyText(fullText()), 'btn-outline'],
                     [t('nigerianContextAction'), makeNigerian, 'btn-outline'],
                     [t('youthVersionAction'), makeYouth, 'btn-outline'],
                     [t('preachingNotesAction'), getPreachNotes, 'btn-outline'],
                     [t('preachModeAction'), ()=>setPreachMode(true), 'btn-outline'],
                     [t('sermon.downloadPDF'), downloadPDF, 'btn-outline'],
+                    [slidesBuilding?'Building slides…':'📊 Generate Slides', generateSlides, 'btn-outline'],
                   ].map(([label,action,cls])=>(
-                    <button key={label} onClick={action} disabled={improving!=null} className={`btn ${cls} btn-sm`} style={{gap:5}}>{label}</button>
+                    <button key={label} onClick={action} disabled={improving!=null||(label.includes('Slides')&&slidesBuilding)} className={`btn ${cls} btn-sm`} style={{gap:5}}>{label}</button>
                   ))}
                 </div>
 
@@ -316,7 +340,7 @@ export default function SermonPage() {
                     <textarea className="textarea-field" style={{fontSize:14,minHeight:80}} value={pt.content} onChange={e=>setSermon(s=>({...s,points:s.points.map((p,j)=>j===i?{...p,content:e.target.value}:p)}))}/>
                     <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
                       <button onClick={()=>improve(`point ${i+1}`,pt.content)} disabled={improving!=null} className="btn btn-outline btn-sm" style={{gap:5}}>{t('improveButton')}</button>
-                      <button onClick={()=>copyText(`${pt.title}\n${pt.scripture}\n${pt.content}`, t('copiedToast'))} className="btn btn-outline btn-sm">{t('copyButton')}</button>
+                      <button onClick={()=>copyText(`${pt.title}\n${pt.scripture}\n${pt.content}`)} className="btn btn-outline btn-sm">{t('copyButton')}</button>
                     </div>
                   </div>
                 ))}

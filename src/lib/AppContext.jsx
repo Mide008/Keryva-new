@@ -184,6 +184,13 @@ export function AppProvider({children}){
   const saveWarfareEntry=useCallback(e=>{const entry={...e,id:e.id||Date.now(),date:e.date||new Date().toISOString().split('T')[0]};setWarfareEntries(a=>[entry,...a.filter(x=>x.id!==entry.id)]);showToast('Battle plan saved','⚔️');return entry},[showToast])
   const deleteWarfareEntry=useCallback(id=>{setWarfareEntries(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
   const saveDevotional=useCallback(d=>{const entry={...d,id:d.id||Date.now(),date:d.date||new Date().toISOString().split('T')[0]};setDevotionals(a=>[entry,...a.filter(x=>x.date!==entry.date)]);return entry},[])
+  // Personal reflection the user writes on a devotional entry — separate
+  // from the AI-generated content, never mixed with it. Updates in place
+  // by id so the entry's date/streak position doesn't move.
+  const updateDevotionalNote=useCallback((id,note)=>{
+    setDevotionals(a=>a.map(d=>d.id===id?{...d,myNote:note}:d))
+    showToast('Note saved','📝')
+  },[showToast])
   const saveConfessions=useCallback(c=>{const entry={...c,id:c.id||Date.now(),date:c.date||new Date().toISOString().split('T')[0]};setConfessions(a=>[entry,...a.filter(x=>x.id!==entry.id)]);showToast('Declarations saved','🕊')},[showToast])
   const deleteConfessions=useCallback(id=>{setConfessions(a=>a.filter(x=>x.id!==id));showToast('Removed','🗑')},[showToast])
   const saveFastingEntry=useCallback(e=>{const entry={...e,id:e.id||Date.now(),date:e.date||new Date().toISOString().split('T')[0]};setFastingEntries(a=>[entry,...a.filter(x=>x.id!==entry.id)]);showToast('Fasting plan saved','🍽');return entry},[showToast])
@@ -226,7 +233,7 @@ export function AppProvider({children}){
     sundayPacks,saveSundayPack,
     socialPacks,saveSocialPack,
     warfareEntries,saveWarfareEntry,deleteWarfareEntry,
-    devotionals,saveDevotional,
+    devotionals,saveDevotional,updateDevotionalNote,
     confessions,saveConfessions,deleteConfessions,
     fastingEntries,saveFastingEntry,deleteFastingEntry,logFastingDay,addFastingJournalEntry,completeFastingJourney,
     projects,saveProject,deleteProject,addToProject,removeFromProject,

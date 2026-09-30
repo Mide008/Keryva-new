@@ -10,6 +10,7 @@ import { LoadingPulse } from '@/components/ui/Loading'
 import EmptyState from '@/components/ui/EmptyState'
 import { RevealCard, MagneticBtn, MotionHeadline } from '@/components/ui/MotionComponents'
 import { dailyBackgroundImage } from '@/lib/bibleData'
+import { buildSundayPackSlideDeck, downloadSlidesPptx } from '@/lib/slideDeck'
 
 function parseJSON(raw){try{return JSON.parse(raw.replace(/```json|```/g,'').trim())}catch{return null}}
 
@@ -25,6 +26,7 @@ export default function SundayPackPage(){
   const [theme,setTheme]=useState('')
   const [announcements,setAnnouncements]=useState('')
   const [pack,setPack]=useState(null)
+  const [slidesBuilding,setSlidesBuilding]=useState(false)
 
   useEffect(() => {
     if (!pendingVerse) return
@@ -63,6 +65,23 @@ export default function SundayPackPage(){
   }
 
   const copySection=(label,content)=>{navigator.clipboard.writeText(`${label}\n\n${content}`).catch(()=>{});showToast(t('copied'),'📋')}
+
+  // Same reshape-not-regenerate approach as Sermon Studio — a Sunday Pack
+  // already has the call-to-worship / sermon summary / scriptures / prayer
+  // points / blessing structure a service slide deck needs.
+  const generateSlides = async () => {
+    if (!pack) return
+    setSlidesBuilding(true)
+    try {
+      const deck = buildSundayPackSlideDeck(pack, { date, church: church || user?.church })
+      await downloadSlidesPptx(deck, (pack.bulletinHeader || topic || 'Sunday-Service').replace(/[^a-z0-9]+/gi,'-'))
+      showToast('Slides downloaded', '📊')
+    } catch (e) {
+      showToast('Could not build slides right now', '❌')
+    } finally {
+      setSlidesBuilding(false)
+    }
+  }
 
   const SECTIONS=pack?[
     {key:'bulletinHeader',label:'📄 Bulletin Header',type:'text'},
@@ -157,9 +176,10 @@ export default function SundayPackPage(){
                       </div>
                     )
                   })}
-                  <div style={{display:'flex',gap:10}}>
-                    <button onClick={()=>saveSundayPack({title:topic,topic,date,scripture,church,speaker,content:pack})} className="btn btn-gold" style={{flex:1,justifyContent:'center',gap:8}}>{t('savePack')}</button>
-                    <button onClick={shareAll} className="btn btn-outline" style={{flex:1,justifyContent:'center',gap:8}}>{t('shareAll')}</button>
+                  <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                    <button onClick={()=>saveSundayPack({title:topic,topic,date,scripture,church,speaker,content:pack})} className="btn btn-gold" style={{flex:1,justifyContent:'center',gap:8,minWidth:140}}>{t('savePack')}</button>
+                    <button onClick={shareAll} className="btn btn-outline" style={{flex:1,justifyContent:'center',gap:8,minWidth:140}}>{t('shareAll')}</button>
+                    <button onClick={generateSlides} disabled={slidesBuilding} className="btn btn-outline" style={{flex:1,justifyContent:'center',gap:8,minWidth:140}}>{slidesBuilding?'Building slides…':'📊 Generate Slides'}</button>
                     <button onClick={gen} className="btn btn-outline" style={{padding:'10px 14px'}} title={t('regenerate')}>↺</button>
                   </div>
                 </motion.div>
